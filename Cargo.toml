@@ -1,0 +1,11 @@
+[package]
+name = "openlyrics"
+version = "0.1.0"
+edition = "2024"
+authors = ["Andrew Walbran <qwandor@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Library for parsing OpenLyrics XML files."
+
+[dependencies]
+serde = "1.0.219"
+serde-xml-rs = "0.8.1"
