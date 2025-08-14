@@ -47,7 +47,7 @@ pub struct Title {
     pub translit: Option<String>,
     #[serde(rename = "@original")]
     pub original: Option<bool>,
-    #[serde(rename = "#text")]
+    #[serde(rename = "$text")]
     pub title: String,
 }
 
@@ -69,12 +69,12 @@ pub struct Author {
     pub author_type: Option<String>,
     #[serde(rename = "@lang")]
     pub lang: Option<String>,
-    #[serde(rename = "#text")]
+    #[serde(rename = "$text")]
     pub name: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "@type", content = "#text", rename_all = "lowercase")]
+#[serde(tag = "@type", content = "$text", rename_all = "lowercase")]
 pub enum Tempo {
     Bpm(u16),
     Text(String),
@@ -118,7 +118,7 @@ pub struct Theme {
     pub lang: Option<String>,
     #[serde(rename = "@translit")]
     pub translit: Option<String>,
-    #[serde(rename = "#text")]
+    #[serde(rename = "$text")]
     pub title: String,
 }
 
