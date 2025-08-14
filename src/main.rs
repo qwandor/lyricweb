@@ -20,8 +20,9 @@ fn print_lyrics(lyrics: &Lyrics) {
                     if let Some(part) = &line.part {
                         println!("({part})");
                     }
-                    print_contents(&line.contents);
-                    println!();
+                    for simple_line in &simplify_contents(&line.contents) {
+                        println!("{simple_line}");
+                    }
                     if let Some(repeat) = line.repeat {
                         println!("x{repeat}");
                     }
@@ -33,28 +34,43 @@ fn print_lyrics(lyrics: &Lyrics) {
     }
 }
 
-fn print_contents(contents: &[VerseContent]) {
+fn simplify_contents(contents: &[VerseContent]) -> Vec<String> {
+    let mut simple_lines = vec![];
+    add_simple_contents(contents, &mut simple_lines);
+    simple_lines
+        .into_iter()
+        .map(|line| line.trim().to_owned())
+        .collect()
+}
+
+fn add_simple_contents(contents: &[VerseContent], simple_lines: &mut Vec<String>) {
     for content in contents {
-        print_content(content);
+        add_simple_content(content, simple_lines);
     }
 }
 
-fn print_content(content: &VerseContent) {
+fn add_simple_content(content: &VerseContent, simple_lines: &mut Vec<String>) {
     match content {
         VerseContent::Text(text) => {
+            if simple_lines.is_empty() {
+                simple_lines.push(String::new());
+            }
             let text = text.replace(char::is_whitespace, " ");
-            print!("{}", text.trim());
+            let line = simple_lines.last_mut().unwrap();
+            line.push_str(text.trim());
             if text.ends_with(' ') {
-                print!(" ");
+                line.push(' ');
             }
         }
         VerseContent::Chord { contents, .. } => {
-            print_contents(contents);
+            add_simple_contents(contents, simple_lines);
         }
-        VerseContent::Br => println!(),
+        VerseContent::Br => {
+            simple_lines.push(String::new());
+        }
         VerseContent::Comment(_) => {}
         VerseContent::Tag { contents, .. } => {
-            print_contents(contents);
+            add_simple_contents(contents, simple_lines);
         }
     }
 }
