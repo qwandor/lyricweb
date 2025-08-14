@@ -136,3 +136,57 @@ impl Comments {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Lyrics {}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quick_xml::de::from_str;
+
+    #[test]
+    fn minimal() {
+        let song: Song = from_str(
+            r#"<song>
+                <properties>
+                    <titles>
+                        <title>Title</title>
+                    </titles>
+                </properties>
+                <lyrics>
+                </lyrics>
+            </song>"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            song,
+            Song {
+                properties: Properties {
+                    titles: Titles {
+                        titles: vec![Title {
+                            lang: None,
+                            translit: None,
+                            original: None,
+                            title: "Title".to_string(),
+                        }]
+                    },
+                    authors: Authors { authors: vec![] },
+                    copyright: None,
+                    ccli_no: None,
+                    released: None,
+                    transposition: None,
+                    tempo: None,
+                    key: None,
+                    time_signature: None,
+                    variant: None,
+                    publisher: None,
+                    version: None,
+                    keywords: None,
+                    verse_order: None,
+                    songbooks: Songbooks { songbooks: vec![] },
+                    themes: Themes { themes: vec![] },
+                    comments: Comments { comments: vec![] },
+                },
+                lyrics: Lyrics {}
+            }
+        );
+    }
+}
