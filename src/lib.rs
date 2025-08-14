@@ -133,9 +133,106 @@ impl Comments {
         self.comments.is_empty()
     }
 }
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Lyrics {
+    #[serde(rename = "$value", default)]
+    pub lyrics: Vec<LyricEntry>,
+}
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Lyrics {}
+#[serde(rename_all = "camelCase")]
+pub enum LyricEntry {
+    Verse {
+        #[serde(rename = "@name")]
+        name: String,
+        #[serde(rename = "@lang")]
+        lang: Option<String>,
+        #[serde(rename = "@translit")]
+        translit: Option<String>,
+        #[serde(default)]
+        lines: Vec<Lines>,
+    },
+    Instrument {
+        #[serde(rename = "@name")]
+        name: String,
+        #[serde(default)]
+        lines: Vec<InstrumentLines>,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Lines {
+    #[serde(rename = "@break")]
+    pub break_optional: Option<String>,
+    #[serde(rename = "@part")]
+    pub part: Option<String>,
+    #[serde(rename = "@repeat")]
+    pub repeat: Option<u32>,
+    #[serde(rename = "$value", default)]
+    pub contents: Vec<VerseContent>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum VerseContent {
+    #[serde(rename = "$text")]
+    Text(String),
+    Chord {
+        #[serde(rename = "@name")]
+        name: Option<String>,
+        #[serde(rename = "@root")]
+        root: Option<String>,
+        #[serde(rename = "@bass")]
+        bass: Option<String>,
+        #[serde(rename = "@structure")]
+        structure: Option<String>,
+        #[serde(rename = "@upbeat")]
+        upbeat: Option<bool>,
+        #[serde(rename = "$value", default)]
+        contents: Vec<VerseContent>,
+    },
+    Br,
+    Comment(String),
+    Tag {
+        #[serde(rename = "@name")]
+        name: String,
+        #[serde(rename = "$value", default)]
+        contents: Vec<VerseContent>,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct InstrumentLines {
+    #[serde(rename = "$value", default)]
+    pub contents: Vec<InstrumentContent>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum InstrumentContent {
+    Chord(InstrumentChord),
+    Beat {
+        #[serde(rename = "$value", default)]
+        contents: Vec<InstrumentChord>,
+    },
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+pub struct InstrumentChord {
+    #[serde(rename = "@name")]
+    pub name: Option<String>,
+    #[serde(rename = "@root")]
+    pub root: Option<String>,
+    #[serde(rename = "@bass")]
+    pub bass: Option<String>,
+    #[serde(rename = "@structure")]
+    pub structure: Option<String>,
+    #[serde(rename = "@upbeat")]
+    pub upbeat: Option<bool>,
+    #[serde(rename = "$value", default)]
+    contents: Vec<InstrumentChord>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,7 +282,232 @@ mod tests {
                     themes: Themes { themes: vec![] },
                     comments: Comments { comments: vec![] },
                 },
-                lyrics: Lyrics {}
+                lyrics: Lyrics { lyrics: vec![] }
+            }
+        );
+    }
+
+    #[test]
+    fn empty_lyrics() {
+        let lyrics: Lyrics = from_str("<lyrics></lyrics>").unwrap();
+        assert_eq!(lyrics, Lyrics { lyrics: vec![] });
+    }
+
+    #[test]
+    fn verse_and_instrument() {
+        let lyrics: Lyrics = from_str(
+            r#"<lyrics>
+                <instrument name="i"></instrument>
+                <verse name="v1"></verse>
+                <verse name="v2"></verse>
+            </lyrics>"#,
+        )
+        .unwrap();
+        assert_eq!(
+            lyrics,
+            Lyrics {
+                lyrics: vec![
+                    LyricEntry::Instrument {
+                        name: "i".to_string(),
+                        lines: vec![],
+                    },
+                    LyricEntry::Verse {
+                        name: "v1".to_string(),
+                        lang: None,
+                        translit: None,
+                        lines: vec![],
+                    },
+                    LyricEntry::Verse {
+                        name: "v2".to_string(),
+                        lang: None,
+                        translit: None,
+                        lines: vec![],
+                    },
+                ]
+            }
+        );
+    }
+
+    #[test]
+    fn complex_verse() {
+        let lyrics: Lyrics = from_str(
+            r#"<lyrics>
+                <verse name="v1" lang="en" translit="en">
+                    <lines break="optional" part="men" repeat="2">
+                        First line<br/>
+                        <comment>Some comment</comment>
+                        Second <chord root="D">line</chord>
+                        <chord root="B"/>
+                    </lines>
+                    <lines>
+                        More lines
+                    </lines>
+                </verse>
+            </lyrics>"#,
+        )
+        .unwrap();
+        assert_eq!(
+            lyrics,
+            Lyrics {
+                lyrics: vec![LyricEntry::Verse {
+                    name: "v1".to_string(),
+                    lang: Some("en".to_string()),
+                    translit: Some("en".to_string()),
+                    lines: vec![
+                        Lines {
+                            break_optional: Some("optional".to_string()),
+                            part: Some("men".to_string()),
+                            repeat: Some(2),
+                            contents: vec![
+                                VerseContent::Text(
+                                    "\n                        First line".to_string()
+                                ),
+                                VerseContent::Br,
+                                VerseContent::Comment("Some comment".to_string()),
+                                VerseContent::Text("\n                        Second ".to_string()),
+                                VerseContent::Chord {
+                                    root: Some("D".to_string()),
+                                    name: None,
+                                    bass: None,
+                                    structure: None,
+                                    upbeat: None,
+                                    contents: vec![VerseContent::Text("line".to_string())],
+                                },
+                                VerseContent::Chord {
+                                    root: Some("B".to_string()),
+                                    name: None,
+                                    bass: None,
+                                    structure: None,
+                                    upbeat: None,
+                                    contents: vec![],
+                                }
+                            ],
+                        },
+                        Lines {
+                            break_optional: None,
+                            part: None,
+                            repeat: None,
+                            contents: vec![VerseContent::Text(
+                                "\n                        More lines\n                    "
+                                    .to_string()
+                            )],
+                        },
+                    ],
+                },]
+            }
+        );
+    }
+
+    #[test]
+    fn instrument() {
+        let lyrics: Lyrics = from_str(
+            r#"<lyrics>
+                <instrument name="i">
+                    <lines>
+                        <beat><chord root="A"/><chord root="B"/></beat>
+                        <chord root="C"/>
+                        <beat></beat>
+                    </lines>
+                </instrument>
+            </lyrics>"#,
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            lyrics,
+            Lyrics {
+                lyrics: vec![LyricEntry::Instrument {
+                    name: "i".to_string(),
+                    lines: vec![InstrumentLines {
+                        contents: vec![
+                            InstrumentContent::Beat {
+                                contents: vec![
+                                    InstrumentChord {
+                                        root: Some("A".to_string()),
+                                        ..Default::default()
+                                    },
+                                    InstrumentChord {
+                                        root: Some("B".to_string()),
+                                        ..Default::default()
+                                    },
+                                ]
+                            },
+                            InstrumentContent::Chord(InstrumentChord {
+                                root: Some("C".to_string()),
+                                ..Default::default()
+                            }),
+                            InstrumentContent::Beat { contents: vec![] },
+                        ]
+                    }],
+                },]
+            }
+        );
+    }
+
+    #[test]
+    fn instrument_nested_chords() {
+        let lyrics: Lyrics = from_str(
+            r#"<lyrics>
+                <instrument name="i">
+                    <lines>
+                        <chord root="A"><chord root="B"/></chord>
+                    </lines>
+                </instrument>
+            </lyrics>"#,
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            lyrics,
+            Lyrics {
+                lyrics: vec![LyricEntry::Instrument {
+                    name: "i".to_string(),
+                    lines: vec![InstrumentLines {
+                        contents: vec![InstrumentContent::Chord(InstrumentChord {
+                            root: Some("A".to_string()),
+                            contents: vec![InstrumentChord {
+                                root: Some("B".to_string()),
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        })]
+                    }],
+                },]
+            }
+        );
+    }
+
+    #[test]
+    fn song_verses() {
+        let song: Song = from_str(
+            r#"<song>
+                <properties>
+                    <titles>
+                        <title>Test</title>
+                    </titles>
+                </properties>
+                <lyrics>
+                    <verse name="v1"></verse>
+                    <verse name="v2"></verse>
+                </lyrics>
+            </song>"#,
+        )
+        .unwrap();
+        assert_eq!(
+            song.lyrics,
+            Lyrics {
+                lyrics: vec![
+                    LyricEntry::Verse {
+                        name: "v1".to_string(),
+                        lang: None,
+                        translit: None,
+                        lines: vec![],
+                    },
+                    LyricEntry::Verse {
+                        name: "v2".to_string(),
+                        lang: None,
+                        translit: None,
+                        lines: vec![],
+                    },
+                ]
             }
         );
     }
