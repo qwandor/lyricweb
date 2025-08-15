@@ -3,7 +3,7 @@
 [![crates.io page](https://img.shields.io/crates/v/openlyrics.svg)](https://crates.io/crates/openlyrics)
 [![docs.rs page](https://docs.rs/openlyrics/badge.svg)](https://docs.rs/openlyrics)
 
-A Rust library for parsing OpenLyrics XML files.
+A Rust library for parsing [OpenLyrics](https://docs.openlyrics.org/en/latest/) XML files.
 
 This is not an officially supported Google product. This project is not eligible for the
 [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
