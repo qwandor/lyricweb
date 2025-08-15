@@ -3,7 +3,7 @@
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
 use openlyrics::{LyricEntry, Lyrics, Song, VerseContent};
-use quick_xml::{de::from_reader, se::to_string};
+use quick_xml::de::from_reader;
 use std::io::stdin;
 
 fn main() {
@@ -11,8 +11,6 @@ fn main() {
     println!("{song:#?}");
     println!("= {} =", song.properties.titles.titles[0].title);
     print_lyrics(&song.lyrics);
-    let xml = to_string(&song).unwrap();
-    println!("{xml}");
 }
 
 fn print_lyrics(lyrics: &Lyrics) {
