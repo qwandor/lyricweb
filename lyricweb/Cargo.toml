@@ -12,7 +12,19 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wasm-bindgen = "0.2.100"
 openlyrics = { version = "0.1.0", path = "../openlyrics" }
-web-sys = { version = "0.3.77" }
+web-sys = { version = "0.3.77", features = [
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "File",
+    "FileList",
+    "HtmlElement",
+    "HtmlFormElement",
+    "HtmlInputElement",
+    "Node",
+    "Window",
+] }
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
