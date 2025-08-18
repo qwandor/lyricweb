@@ -30,6 +30,13 @@ enum Args {
 
 fn print_header(properties: &Properties) {
     println!("= {} =", properties.titles.titles[0].title);
+    for author in &properties.authors.authors {
+        if let Some(author_type) = &author.author_type {
+            println!("Author ({author_type}): {}", author.name);
+        } else {
+            println!("Author: {}", author.name);
+        }
+    }
 }
 
 fn print_lyrics(lyrics: &Lyrics) {
