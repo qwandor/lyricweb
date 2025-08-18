@@ -2,15 +2,34 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use openlyrics::types::{LyricEntry, Lyrics, Song, VerseContent};
+use clap::Parser;
+use eyre::Report;
+use openlyrics::types::{LyricEntry, Lyrics, Properties, Song, VerseContent};
 use quick_xml::de::from_reader;
-use std::io::stdin;
+use std::{fs::File, io::BufReader, path::PathBuf};
 
-fn main() {
+fn main() -> Result<(), Report> {
     pretty_env_logger::init();
-    let song: Song = from_reader(stdin().lock()).unwrap();
-    println!("= {} =", song.properties.titles.titles[0].title);
-    print_lyrics(&song.lyrics);
+
+    match Args::parse() {
+        Args::Print { path } => {
+            let song: Song = from_reader(BufReader::new(File::open(path)?)).unwrap();
+            print_header(&song.properties);
+            print_lyrics(&song.lyrics);
+        }
+    }
+
+    Ok(())
+}
+
+#[derive(Clone, Debug, Parser)]
+enum Args {
+    /// Print the lyrics from the given OpenLyrics XML file to standard output.
+    Print { path: PathBuf },
+}
+
+fn print_header(properties: &Properties) {
+    println!("= {} =", properties.titles.titles[0].title);
 }
 
 fn print_lyrics(lyrics: &Lyrics) {
