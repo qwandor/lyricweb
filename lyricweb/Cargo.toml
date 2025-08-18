@@ -1,0 +1,22 @@
+[package]
+name = "lyricweb"
+version = "0.1.0"
+edition = "2024"
+authors = ["Andrew Walbran <qwandor@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Web app for displaying song lyrics."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2.100"
+openlyrics = { version = "0.1.0", path = "../openlyrics" }
+web-sys = { version = "0.3.77" }
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.49"
+
+[features]
+default = ["console_error_panic_hook"]

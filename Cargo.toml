@@ -1,3 +1,7 @@
 [workspace]
-members = ["lyrictool", "openlyrics"]
+members = ["lyrictool", "lyricweb", "openlyrics"]
 resolver = "3"
+
+[profile.release]
+lto = true
+opt-level = "s"
