@@ -16,18 +16,30 @@ pub struct Properties {
     pub titles: Titles,
     #[serde(default, skip_serializing_if = "Authors::is_empty")]
     pub authors: Authors,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub copyright: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ccli_no: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub released: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transposition: Option<i8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tempo: Option<Tempo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub time_signature: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub variant: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub publisher: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub keywords: Option<String>,
     // TODO: Parse space-separated values into a Vec.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub verse_order: Option<String>,
     #[serde(default, skip_serializing_if = "Songbooks::is_empty")]
     pub songbooks: Songbooks,
@@ -45,11 +57,11 @@ pub struct Titles {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Title {
-    #[serde(rename = "@lang")]
+    #[serde(rename = "@lang", skip_serializing_if = "Option::is_none")]
     pub lang: Option<String>,
-    #[serde(rename = "@translit")]
+    #[serde(rename = "@translit", skip_serializing_if = "Option::is_none")]
     pub translit: Option<String>,
-    #[serde(rename = "@original")]
+    #[serde(rename = "@original", skip_serializing_if = "Option::is_none")]
     pub original: Option<bool>,
     #[serde(rename = "$text")]
     pub title: String,
@@ -69,9 +81,9 @@ impl Authors {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Author {
-    #[serde(rename = "@type")]
+    #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
     pub author_type: Option<String>,
-    #[serde(rename = "@lang")]
+    #[serde(rename = "@lang", skip_serializing_if = "Option::is_none")]
     pub lang: Option<String>,
     #[serde(rename = "$text")]
     pub name: String,
@@ -100,7 +112,7 @@ impl Songbooks {
 pub struct Songbook {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "@entry")]
+    #[serde(rename = "@entry", skip_serializing_if = "Option::is_none")]
     pub entry: Option<String>,
 }
 
@@ -118,9 +130,9 @@ impl Themes {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Theme {
-    #[serde(rename = "@lang")]
+    #[serde(rename = "@lang", skip_serializing_if = "Option::is_none")]
     pub lang: Option<String>,
-    #[serde(rename = "@translit")]
+    #[serde(rename = "@translit", skip_serializing_if = "Option::is_none")]
     pub translit: Option<String>,
     #[serde(rename = "$text")]
     pub title: String,
@@ -149,9 +161,9 @@ pub enum LyricEntry {
     Verse {
         #[serde(rename = "@name")]
         name: String,
-        #[serde(rename = "@lang")]
+        #[serde(rename = "@lang", skip_serializing_if = "Option::is_none")]
         lang: Option<String>,
-        #[serde(rename = "@translit")]
+        #[serde(rename = "@translit", skip_serializing_if = "Option::is_none")]
         translit: Option<String>,
         #[serde(default)]
         lines: Vec<Lines>,
@@ -166,11 +178,11 @@ pub enum LyricEntry {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Lines {
-    #[serde(rename = "@break")]
+    #[serde(rename = "@break", skip_serializing_if = "Option::is_none")]
     pub break_optional: Option<String>,
-    #[serde(rename = "@part")]
+    #[serde(rename = "@part", skip_serializing_if = "Option::is_none")]
     pub part: Option<String>,
-    #[serde(rename = "@repeat")]
+    #[serde(rename = "@repeat", skip_serializing_if = "Option::is_none")]
     pub repeat: Option<u32>,
     #[serde(rename = "$value", default)]
     pub contents: Vec<VerseContent>,
@@ -182,15 +194,15 @@ pub enum VerseContent {
     #[serde(rename = "$text")]
     Text(String),
     Chord {
-        #[serde(rename = "@name")]
+        #[serde(rename = "@name", skip_serializing_if = "Option::is_none")]
         name: Option<String>,
-        #[serde(rename = "@root")]
+        #[serde(rename = "@root", skip_serializing_if = "Option::is_none")]
         root: Option<String>,
-        #[serde(rename = "@bass")]
+        #[serde(rename = "@bass", skip_serializing_if = "Option::is_none")]
         bass: Option<String>,
-        #[serde(rename = "@structure")]
+        #[serde(rename = "@structure", skip_serializing_if = "Option::is_none")]
         structure: Option<String>,
-        #[serde(rename = "@upbeat")]
+        #[serde(rename = "@upbeat", skip_serializing_if = "Option::is_none")]
         upbeat: Option<bool>,
         #[serde(rename = "$value", default)]
         contents: Vec<VerseContent>,
@@ -223,15 +235,15 @@ pub enum InstrumentContent {
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct InstrumentChord {
-    #[serde(rename = "@name")]
+    #[serde(rename = "@name", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(rename = "@root")]
+    #[serde(rename = "@root", skip_serializing_if = "Option::is_none")]
     pub root: Option<String>,
-    #[serde(rename = "@bass")]
+    #[serde(rename = "@bass", skip_serializing_if = "Option::is_none")]
     pub bass: Option<String>,
-    #[serde(rename = "@structure")]
+    #[serde(rename = "@structure", skip_serializing_if = "Option::is_none")]
     pub structure: Option<String>,
-    #[serde(rename = "@upbeat")]
+    #[serde(rename = "@upbeat", skip_serializing_if = "Option::is_none")]
     pub upbeat: Option<bool>,
     #[serde(rename = "$value", default)]
     contents: Vec<InstrumentChord>,
