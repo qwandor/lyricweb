@@ -4,13 +4,13 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Song {
     pub properties: Properties,
     pub lyrics: Lyrics,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Properties {
     pub titles: Titles,
@@ -49,13 +49,13 @@ pub struct Properties {
     pub comments: Comments,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Titles {
     #[serde(rename = "title")]
     pub titles: Vec<Title>,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Title {
     #[serde(rename = "@lang", skip_serializing_if = "Option::is_none")]
     pub lang: Option<String>,
@@ -79,7 +79,7 @@ impl Authors {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Author {
     #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
     pub author_type: Option<String>,
@@ -108,7 +108,7 @@ impl Songbooks {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Songbook {
     #[serde(rename = "@name")]
     pub name: String,
@@ -128,7 +128,7 @@ impl Themes {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Theme {
     #[serde(rename = "@lang", skip_serializing_if = "Option::is_none")]
     pub lang: Option<String>,
@@ -176,7 +176,7 @@ pub enum LyricEntry {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Lines {
     #[serde(rename = "@break", skip_serializing_if = "Option::is_none")]
     pub break_optional: Option<String>,
@@ -217,7 +217,7 @@ pub enum VerseContent {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct InstrumentLines {
     #[serde(rename = "$value", default)]
     pub contents: Vec<InstrumentContent>,
