@@ -4,7 +4,10 @@
 
 use clap::Parser;
 use eyre::Report;
-use openlyrics::types::{LyricEntry, Lyrics, Properties, Song, VerseContent};
+use openlyrics::{
+    simplify_contents,
+    types::{LyricEntry, Lyrics, Properties, Song},
+};
 use quick_xml::de::from_reader;
 use std::{fs::File, io::BufReader, path::PathBuf};
 
@@ -58,47 +61,6 @@ fn print_lyrics(lyrics: &Lyrics) {
                 }
             }
             LyricEntry::Instrument { name, .. } => println!("Skipping instrumental {name}."),
-        }
-    }
-}
-
-fn simplify_contents(contents: &[VerseContent]) -> Vec<String> {
-    let mut simple_lines = vec![];
-    add_simple_contents(contents, &mut simple_lines);
-    simple_lines
-        .into_iter()
-        .map(|line| line.trim().to_owned())
-        .collect()
-}
-
-fn add_simple_contents(contents: &[VerseContent], simple_lines: &mut Vec<String>) {
-    for content in contents {
-        add_simple_content(content, simple_lines);
-    }
-}
-
-fn add_simple_content(content: &VerseContent, simple_lines: &mut Vec<String>) {
-    match content {
-        VerseContent::Text(text) => {
-            if simple_lines.is_empty() {
-                simple_lines.push(String::new());
-            }
-            let text = text.replace(char::is_whitespace, " ");
-            let line = simple_lines.last_mut().unwrap();
-            line.push_str(text.trim());
-            if text.ends_with(' ') {
-                line.push(' ');
-            }
-        }
-        VerseContent::Chord { contents, .. } => {
-            add_simple_contents(contents, simple_lines);
-        }
-        VerseContent::Br => {
-            simple_lines.push(String::new());
-        }
-        VerseContent::Comment(_) => {}
-        VerseContent::Tag { contents, .. } => {
-            add_simple_contents(contents, simple_lines);
         }
     }
 }
