@@ -7,6 +7,7 @@ use quick_xml::de::from_reader;
 use std::io::stdin;
 
 fn main() {
+    pretty_env_logger::init();
     let song: Song = from_reader(stdin().lock()).unwrap();
     println!("= {} =", song.properties.titles.titles[0].title);
     print_lyrics(&song.lyrics);
