@@ -528,4 +528,107 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn serialise_empty() {
+        let song = Song::default();
+        assert_eq!(
+            quick_xml::se::to_string(&song).unwrap(),
+            "<song><properties><titles/></properties><lyrics/></song>"
+        );
+    }
+
+    #[test]
+    fn serialise_properties() {
+        let song = Song {
+            properties: Properties {
+                titles: Titles {
+                    titles: vec![Title {
+                        title: "Title".to_string(),
+                        lang: Some("en".to_string()),
+                        ..Default::default()
+                    }],
+                },
+                authors: Authors {
+                    authors: vec![Author {
+                        name: "Author".to_string(),
+                        author_type: Some("words".to_string()),
+                        ..Default::default()
+                    }],
+                },
+                copyright: None,
+                ccli_no: None,
+                released: None,
+                transposition: None,
+                tempo: None,
+                key: None,
+                time_signature: None,
+                variant: None,
+                publisher: Some("Publisher".to_string()),
+                version: None,
+                keywords: None,
+                verse_order: None,
+                songbooks: Songbooks {
+                    songbooks: vec![Songbook {
+                        name: "Songbook".to_string(),
+                        entry: Some("entry".to_string()),
+                    }],
+                },
+                themes: Themes {
+                    themes: vec![Theme {
+                        title: "Theme".to_string(),
+                        lang: Some("en".to_string()),
+                        ..Default::default()
+                    }],
+                },
+                comments: Comments {
+                    comments: vec!["Comment".to_string(), "Another comment".to_string()],
+                },
+            },
+            lyrics: Default::default(),
+        };
+        assert_eq!(
+            quick_xml::se::to_string(&song).unwrap(),
+            "<song>\
+<properties>\
+<titles><title lang=\"en\">Title</title></titles>\
+<authors><author type=\"words\">Author</author></authors>\
+<publisher>Publisher</publisher>\
+<songbooks><songbook name=\"Songbook\" entry=\"entry\"/></songbooks>\
+<themes><theme lang=\"en\">Theme</theme></themes>\
+<comments><comment>Comment</comment><comment>Another comment</comment></comments>\
+</properties>\
+<lyrics/></song>"
+        );
+    }
+
+    #[test]
+    fn serialise_lyrics() {
+        let song = Song {
+            properties: Default::default(),
+            lyrics: Lyrics {
+                lyrics: vec![LyricEntry::Verse {
+                    name: "v1".to_string(),
+                    lang: Some("en".to_string()),
+                    translit: None,
+                    lines: vec![Lines {
+                        part: Some("men".to_string()),
+                        contents: vec![],
+                        ..Default::default()
+                    }],
+                }],
+            },
+        };
+        assert_eq!(
+            quick_xml::se::to_string(&song).unwrap(),
+            "<song>\
+<properties><titles/></properties>\
+<lyrics>\
+<verse name=\"v1\" lang=\"en\">\
+<lines part=\"men\"/>\
+</verse>\
+</lyrics>\
+</song>"
+        );
+    }
 }
