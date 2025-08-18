@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use openlyrics::{LyricEntry, Lyrics, Song, VerseContent};
+use openlyrics::types::{LyricEntry, Lyrics, Song, VerseContent};
 use quick_xml::de::from_reader;
 use std::io::stdin;
 
