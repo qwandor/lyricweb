@@ -8,7 +8,6 @@ use std::io::stdin;
 
 fn main() {
     let song: Song = from_reader(stdin().lock()).unwrap();
-    println!("{song:#?}");
     println!("= {} =", song.properties.titles.titles[0].title);
     print_lyrics(&song.lyrics);
 }
