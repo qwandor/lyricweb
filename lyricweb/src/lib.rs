@@ -1,5 +1,11 @@
 use gloo_file::{File, FileList, futures::read_as_text};
 use gloo_utils::document;
+use openlyrics::{
+    simplify_contents,
+    types::{LyricEntry, Song},
+};
+use quick_xml::de::from_str;
+use std::fmt::Write;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{Element, Event, EventTarget, HtmlInputElement};
@@ -68,7 +74,52 @@ async fn open_file(file: &File) {
         file.raw_mime_type()
     ));
     let text = read_as_text(&file).await.unwrap();
-    show_output(&text);
+    match from_str(&text) {
+        Ok(song) => {
+            show_error("");
+            show_song(&song);
+        }
+        Err(e) => show_error(&e.to_string()),
+    }
+}
+
+fn show_song(song: &Song) {
+    let mut song_html = String::new();
+    writeln!(
+        &mut song_html,
+        "<h1>{}</h1>",
+        song.properties.titles.titles[0].title
+    )
+    .unwrap();
+    for item in &song.lyrics.lyrics {
+        match item {
+            LyricEntry::Verse { name, lines, .. } => {
+                writeln!(&mut song_html, "<h2>{name}</h2>").unwrap();
+                writeln!(&mut song_html, "<div class=\"verse\">").unwrap();
+                for line in lines {
+                    writeln!(&mut song_html, "<p>").unwrap();
+                    if let Some(part) = &line.part {
+                        writeln!(&mut song_html, "({part})<br/>").unwrap();
+                    }
+                    for simple_line in &simplify_contents(&line.contents) {
+                        writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
+                    }
+                    if let Some(repeat) = line.repeat {
+                        writeln!(&mut song_html, "x{repeat}<br/>").unwrap();
+                    }
+                    writeln!(&mut song_html, "</p>").unwrap();
+                }
+                writeln!(&mut song_html, "</div>").unwrap();
+            }
+            LyricEntry::Instrument { name, .. } => {
+                writeln!(&mut song_html, "<p>(instrumental {name})</p>").unwrap()
+            }
+        }
+    }
+    let song_element = document()
+        .get_element_by_id("song")
+        .expect("Couldn't find song element");
+    song_element.set_inner_html(&song_html);
 }
 
 fn show_output(text: &str) {

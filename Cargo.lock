@@ -300,6 +300,7 @@ dependencies = [
  "gloo-file",
  "gloo-utils",
  "openlyrics",
+ "quick-xml",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
