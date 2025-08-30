@@ -1,4 +1,5 @@
 use gloo_file::{File, FileList, futures::read_as_text};
+use gloo_utils::document;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{Element, Event, EventTarget, HtmlInputElement};
@@ -17,10 +18,7 @@ pub fn init() {
 }
 
 fn get_element_by_id(id: &str) -> Element {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
+    document()
         .get_element_by_id(id)
         .unwrap_or_else(|| panic!("Failed to find element {id}"))
 }
@@ -74,19 +72,14 @@ async fn open_file(file: &File) {
 }
 
 fn show_output(text: &str) {
-    let document = web_sys::window().unwrap().document().unwrap();
-    let error_element = document
+    let error_element = document()
         .get_element_by_id("output")
         .expect("Couldn't find output element");
     error_element.set_text_content(Some(text));
 }
 
 fn show_error(error: &str) {
-    let document = web_sys::window()
-        .expect("Couldn't find window")
-        .document()
-        .expect("Couldn't find document");
-    let error_element = document
+    let error_element = document()
         .get_element_by_id("error")
         .expect("Couldn't find error element");
     error_element.set_text_content(Some(error));
