@@ -12,7 +12,6 @@ pub fn init() {
     console_error_panic_hook::set_once();
 
     add_listener_by_id("file", "change", file_changed);
-    add_listener_by_id("open_file", "submit", open_file_submitted);
 }
 
 fn get_element_by_id(id: &str) -> Element {
@@ -39,9 +38,7 @@ fn add_listener_and_leak(target: &EventTarget, event_type: &str, callback: fn(Ev
         .unwrap();
 }
 
-fn file_changed(event: Event) {}
-
-fn open_file_submitted(event: Event) {
+fn file_changed(_event: Event) {
     open_file(
         &get_element_by_id("file")
             .unchecked_into::<HtmlInputElement>()
@@ -50,7 +47,6 @@ fn open_file_submitted(event: Event) {
             .get(0)
             .unwrap(),
     );
-    event.prevent_default();
 }
 
 fn open_file(file: &File) {
