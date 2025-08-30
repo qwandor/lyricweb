@@ -10,8 +10,11 @@ description = "Web app for displaying song lyrics."
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2.100"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+gloo-file = { version = "0.3.0", features = ["futures"] }
 openlyrics = { version = "0.1.0", path = "../openlyrics" }
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4.50"
 web-sys = { version = "0.3.77", features = [
     "Document",
     "Element",
@@ -25,7 +28,6 @@ web-sys = { version = "0.3.77", features = [
     "Node",
     "Window",
 ] }
-console_error_panic_hook = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.49"

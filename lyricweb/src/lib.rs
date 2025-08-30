@@ -1,5 +1,7 @@
+use gloo_file::{File, FileList, futures::read_as_text};
 use wasm_bindgen::prelude::*;
-use web_sys::{Element, Event, EventTarget, File, HtmlFormElement, HtmlInputElement};
+use wasm_bindgen_futures::spawn_local;
+use web_sys::{Element, Event, EventTarget, HtmlInputElement};
 
 #[wasm_bindgen]
 extern "C" {
@@ -11,7 +13,7 @@ pub fn init() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    add_listener_by_id("file", "change", file_changed);
+    add_async_listener_by_id("file", "change", file_changed);
 }
 
 fn get_element_by_id(id: &str) -> Element {
@@ -23,11 +25,23 @@ fn get_element_by_id(id: &str) -> Element {
         .unwrap_or_else(|| panic!("Failed to find element {id}"))
 }
 
-fn add_listener_by_id(id: &str, event_type: &str, callback: fn(Event)) {
+fn add_async_listener_by_id<F: Future<Output = ()> + 'static>(
+    id: &str,
+    event_type: &str,
+    callback: fn(Event) -> F,
+) {
+    add_listener_by_id(id, event_type, move |event| spawn_local(callback(event)));
+}
+
+fn add_listener_by_id(id: &str, event_type: &str, callback: impl Fn(Event) + 'static) {
     add_listener_and_leak(&get_element_by_id(id), event_type, callback);
 }
 
-fn add_listener_and_leak(target: &EventTarget, event_type: &str, callback: fn(Event)) {
+fn add_listener_and_leak(
+    target: &EventTarget,
+    event_type: &str,
+    callback: impl Fn(Event) + 'static,
+) {
     target
         .add_event_listener_with_callback(
             event_type,
@@ -38,19 +52,25 @@ fn add_listener_and_leak(target: &EventTarget, event_type: &str, callback: fn(Ev
         .unwrap();
 }
 
-fn file_changed(_event: Event) {
-    open_file(
-        &get_element_by_id("file")
+async fn file_changed(_event: Event) {
+    let files = FileList::from(
+        get_element_by_id("file")
             .unchecked_into::<HtmlInputElement>()
             .files()
-            .unwrap()
-            .get(0)
             .unwrap(),
     );
+    open_file(files.first().unwrap()).await;
 }
 
-fn open_file(file: &File) {
-    show_output(&file.name());
+async fn open_file(file: &File) {
+    show_output(&format!(
+        "{}: {} bytes, {}",
+        file.name(),
+        file.size(),
+        file.raw_mime_type()
+    ));
+    let text = read_as_text(&file).await.unwrap();
+    show_output(&text);
 }
 
 fn show_output(text: &str) {
