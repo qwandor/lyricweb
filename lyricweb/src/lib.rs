@@ -99,13 +99,13 @@ fn show_song(song: &Song) {
                 for line in lines {
                     writeln!(&mut song_html, "<p>").unwrap();
                     if let Some(part) = &line.part {
-                        writeln!(&mut song_html, "({part})<br/>").unwrap();
+                        writeln!(&mut song_html, "<em>({part})</em><br/>").unwrap();
                     }
                     for simple_line in &simplify_contents(&line.contents) {
                         writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
                     }
                     if let Some(repeat) = line.repeat {
-                        writeln!(&mut song_html, "x{repeat}<br/>").unwrap();
+                        writeln!(&mut song_html, "<strong>x{repeat}</strong><br/>").unwrap();
                     }
                     writeln!(&mut song_html, "</p>").unwrap();
                 }
