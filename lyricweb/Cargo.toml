@@ -27,6 +27,7 @@ web-sys = { version = "0.3.77", features = [
     "HtmlElement",
     "HtmlFormElement",
     "HtmlInputElement",
+    "HtmlSelectElement",
     "Node",
     "Window",
 ] }
