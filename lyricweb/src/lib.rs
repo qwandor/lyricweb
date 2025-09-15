@@ -79,7 +79,7 @@ fn add_song_to_playlist(event: Event) {
             .unwrap()
             .playlist
             .push(model::PlaylistEntry::Song {
-                song: selected.try_into().unwrap(),
+                song_index: selected.try_into().unwrap(),
             });
         update_playlist();
     }
