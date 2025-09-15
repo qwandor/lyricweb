@@ -1,7 +1,6 @@
 # lyrictool
 
 [![crates.io page](https://img.shields.io/crates/v/lyrictool.svg)](https://crates.io/crates/lyrictool)
-[![docs.rs page](https://docs.rs/lyrictool/badge.svg)](https://docs.rs/lyrictool)
 
 A small utility for working with [OpenLyrics](https://docs.openlyrics.org/en/latest/) XML files.
 
