@@ -2,6 +2,8 @@
 
 Rust crates for working with OpenLyrics XML files.
 
+- [lyrictool](./lyrictool), a utility for working with OpenLyrics XML files.
+- [lyricweb](./lyricweb), a web app for presenting lyrics and other text on a big screen.
 - [openlyrics](./openlyrics), a library for parsing OpenLyrics XML files.
 
 This is not an officially supported Google product. This project is not eligible for the
