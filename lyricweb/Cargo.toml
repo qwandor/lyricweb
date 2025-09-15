@@ -5,6 +5,8 @@ edition = "2024"
 authors = ["Andrew Walbran <qwandor@gmail.com>"]
 license = "MIT OR Apache-2.0"
 description = "Web app for displaying song lyrics."
+repository = "https://github.com/qwandor/lyricweb"
+keywords = ["lyrics", "openlyrics", "webapp"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
