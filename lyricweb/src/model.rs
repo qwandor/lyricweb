@@ -26,6 +26,9 @@ impl State {
             match entry {
                 PlaylistEntry::Song { song_index } => {
                     let song = &self.songs[*song_index];
+                    slides.push(Slide::SongStart {
+                        song_index: *song_index,
+                    });
                     for (lyric_entry_index, item) in song.lyrics.lyrics.iter().enumerate() {
                         match item {
                             LyricEntry::Verse { lines, .. } => {
@@ -54,6 +57,9 @@ impl State {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Slide<'a> {
+    SongStart {
+        song_index: usize,
+    },
     Lyrics {
         song_index: usize,
         lyric_entry_index: usize,
@@ -66,32 +72,6 @@ pub enum Slide<'a> {
 pub enum PlaylistEntry {
     Song { song_index: usize },
     Text(String),
-}
-
-impl PlaylistEntry {
-    pub fn summary<'a>(&'a self, state: &'a State) -> &'a str {
-        match self {
-            PlaylistEntry::Song { song_index } => {
-                &state.songs[*song_index].properties.titles.titles[0].title
-            }
-            PlaylistEntry::Text(text) => text,
-        }
-    }
-
-    /// Returns a list of verse titles for songs, or `None` for text.
-    pub fn pages<'a>(&self, state: &'a State) -> Option<Vec<&'a str>> {
-        match self {
-            PlaylistEntry::Song { song_index } => Some(
-                state.songs[*song_index]
-                    .lyrics
-                    .lyrics
-                    .iter()
-                    .map(|lyric_entry| lyric_entry.name())
-                    .collect(),
-            ),
-            PlaylistEntry::Text(_) => None,
-        }
-    }
 }
 
 /// Returns the title to use for the given song.

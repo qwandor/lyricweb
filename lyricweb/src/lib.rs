@@ -4,7 +4,7 @@
 
 mod model;
 
-use crate::model::{PlaylistEntry, State, title_for_song};
+use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
 use gloo_utils::document;
 use openlyrics::{
@@ -129,26 +129,29 @@ async fn open_file(file: &File) {
 }
 
 fn playlist_entry_selected(_event: Event) {
-    let value = document()
+    let selected_index = document()
         .get_element_by_id("playlist")
         .expect("Couldn't find playlist")
         .unchecked_into::<HtmlSelectElement>()
-        .value();
+        .selected_index();
+    let Ok(selected_index) = usize::try_from(selected_index) else {
+        return;
+    };
     let state = STATE.lock().unwrap();
-    if let Some((playlist_index, page_index)) = value.split_once('_') {
-        let playlist_index = playlist_index.parse::<usize>().unwrap();
-        let page_index = page_index.parse::<usize>().unwrap();
-        let entry = &state.playlist[playlist_index];
-        if let PlaylistEntry::Song { song_index } = entry {
+    let slide = &state.slides()[selected_index];
+    match slide {
+        Slide::Lyrics {
+            song_index,
+            lyric_entry_index,
+            lines_index,
+        } => {
             let song = &state.songs[*song_index];
-            show_song_page(song, page_index);
+            show_song_page(song, *lyric_entry_index, *lines_index);
         }
-    } else {
-        let playlist_index = value.parse::<usize>().unwrap();
-        let entry = &state.playlist[playlist_index];
-        if let PlaylistEntry::Text(text) = entry {
+        Slide::Text(text) => {
             show_text_page(text);
         }
+        Slide::SongStart { .. } => {}
     }
 }
 
@@ -172,28 +175,32 @@ fn update_song_list() {
 fn update_playlist() {
     let mut html = String::new();
     let state = STATE.lock().unwrap();
-    for (playlist_index, entry) in state.playlist.iter().enumerate() {
-        if let Some(pages) = entry.pages(&state) {
-            writeln!(
-                &mut html,
-                "<option value=\"{playlist_index}\" disabled>{}</option>",
-                entry.summary(&state),
-            )
-            .unwrap();
-            for (page_index, &page) in pages.iter().enumerate() {
-                writeln!(
-                    &mut html,
-                    "<option value=\"{playlist_index}_{page_index}\">- {page}</option>"
-                )
-                .unwrap();
+    for slide in state.slides() {
+        match slide {
+            Slide::SongStart { song_index } => {
+                let title = title_for_song(&state.songs[song_index]);
+                writeln!(&mut html, "<option disabled>{title}</option>").unwrap();
             }
-        } else {
-            writeln!(
-                &mut html,
-                "<option value=\"{playlist_index}\">{}</option>",
-                entry.summary(&state),
-            )
-            .unwrap();
+            Slide::Lyrics {
+                song_index,
+                lyric_entry_index,
+                lines_index,
+            } => {
+                let song = &state.songs[song_index];
+                if lines_index == 0 {
+                    writeln!(
+                        &mut html,
+                        "<option>- {}</option>",
+                        song.lyrics.lyrics[lyric_entry_index].name(),
+                    )
+                    .unwrap();
+                } else {
+                    writeln!(&mut html, "<option>{lines_index}</option>").unwrap();
+                }
+            }
+            Slide::Text(text) => {
+                writeln!(&mut html, "<option>{text}</option>").unwrap();
+            }
         }
     }
     document()
@@ -209,28 +216,29 @@ fn show_text_page(text: &str) {
     song_element.set_inner_html(&format!("<p>{text}</p>"));
 }
 
-fn show_song_page(song: &Song, page_index: usize) {
+fn show_song_page(song: &Song, lyric_entry_index: usize, lines_index: usize) {
     let mut song_html = String::new();
     writeln!(&mut song_html, "<h1>{}</h1>", title_for_song(song)).unwrap();
 
-    let item = &song.lyrics.lyrics[page_index];
+    let item = &song.lyrics.lyrics[lyric_entry_index];
     match item {
         LyricEntry::Verse { name, lines, .. } => {
             writeln!(&mut song_html, "<h2>{name}</h2>").unwrap();
             writeln!(&mut song_html, "<div class=\"verse\">").unwrap();
-            for line in lines {
-                writeln!(&mut song_html, "<p>").unwrap();
-                if let Some(part) = &line.part {
-                    writeln!(&mut song_html, "<em>({part})</em><br/>").unwrap();
-                }
-                for simple_line in &simplify_contents(&line.contents) {
-                    writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
-                }
-                if let Some(repeat) = line.repeat {
-                    writeln!(&mut song_html, "<strong>x{repeat}</strong><br/>").unwrap();
-                }
-                writeln!(&mut song_html, "</p>").unwrap();
+            let line = &lines[lines_index];
+
+            writeln!(&mut song_html, "<p>").unwrap();
+            if let Some(part) = &line.part {
+                writeln!(&mut song_html, "<em>({part})</em><br/>").unwrap();
             }
+            for simple_line in &simplify_contents(&line.contents) {
+                writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
+            }
+            if let Some(repeat) = line.repeat {
+                writeln!(&mut song_html, "<strong>x{repeat}</strong><br/>").unwrap();
+            }
+            writeln!(&mut song_html, "</p>").unwrap();
+
             writeln!(&mut song_html, "</div>").unwrap();
         }
         LyricEntry::Instrument { name, .. } => {
