@@ -146,6 +146,7 @@ mod tests {
         assert_eq!(
             state.slides(),
             vec![
+                Slide::SongStart { song_index: 0 },
                 Slide::Lyrics {
                     song_index: 0,
                     lyric_entry_index: 0,
