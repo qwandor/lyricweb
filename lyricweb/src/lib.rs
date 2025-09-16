@@ -135,7 +135,15 @@ fn update_playlist() {
     let mut html = String::new();
     let state = STATE.lock().unwrap();
     for entry in &state.playlist {
-        writeln!(&mut html, "<li>{}</li>", entry.summary(&state)).unwrap();
+        writeln!(&mut html, "<li>{}", entry.summary(&state)).unwrap();
+        if let Some(pages) = entry.pages(&state) {
+            writeln!(&mut html, "<ul>").unwrap();
+            for page in pages {
+                writeln!(&mut html, "<li>{page}</li>").unwrap();
+            }
+            writeln!(&mut html, "</ul>").unwrap();
+        }
+        writeln!(&mut html, "</li>").unwrap();
     }
     document()
         .get_element_by_id("playlist")

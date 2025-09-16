@@ -177,6 +177,16 @@ pub enum LyricEntry {
     },
 }
 
+impl LyricEntry {
+    /// Returns the name of the entry, no matter whether it's a verse or instrumental.
+    pub fn name(&self) -> &str {
+        match self {
+            LyricEntry::Verse { name, .. } => name,
+            LyricEntry::Instrument { name, .. } => name,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Lines {
     #[serde(rename = "@break", skip_serializing_if = "Option::is_none")]

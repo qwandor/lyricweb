@@ -77,4 +77,19 @@ impl PlaylistEntry {
             PlaylistEntry::Text(text) => text,
         }
     }
+
+    /// Returns a list of verse titles for songs, or `None` for text.
+    pub fn pages<'a>(&self, state: &'a State) -> Option<Vec<&'a str>> {
+        match self {
+            PlaylistEntry::Song { song_index } => Some(
+                state.songs[*song_index]
+                    .lyrics
+                    .lyrics
+                    .iter()
+                    .map(|lyric_entry| lyric_entry.name())
+                    .collect(),
+            ),
+            PlaylistEntry::Text(_) => None,
+        }
+    }
 }
