@@ -134,16 +134,29 @@ fn update_song_list() {
 fn update_playlist() {
     let mut html = String::new();
     let state = STATE.lock().unwrap();
-    for entry in &state.playlist {
-        writeln!(&mut html, "<li>{}", entry.summary(&state)).unwrap();
+    for (playlist_index, entry) in state.playlist.iter().enumerate() {
         if let Some(pages) = entry.pages(&state) {
-            writeln!(&mut html, "<ul>").unwrap();
-            for page in pages {
-                writeln!(&mut html, "<li>{page}</li>").unwrap();
+            writeln!(
+                &mut html,
+                "<option value=\"{playlist_index}\" disabled>{}</option>",
+                entry.summary(&state),
+            )
+            .unwrap();
+            for (page_index, &page) in pages.iter().enumerate() {
+                writeln!(
+                    &mut html,
+                    "<option value=\"{playlist_index}_{page_index}\">- {page}</option>"
+                )
+                .unwrap();
             }
-            writeln!(&mut html, "</ul>").unwrap();
+        } else {
+            writeln!(
+                &mut html,
+                "<option value=\"{playlist_index}\">{}</option>",
+                entry.summary(&state),
+            )
+            .unwrap();
         }
-        writeln!(&mut html, "</li>").unwrap();
     }
     document()
         .get_element_by_id("playlist")
