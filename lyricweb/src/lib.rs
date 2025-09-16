@@ -4,7 +4,7 @@
 
 mod model;
 
-use crate::model::{PlaylistEntry, State};
+use crate::model::{PlaylistEntry, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
 use gloo_utils::document;
 use openlyrics::{
@@ -159,7 +159,7 @@ fn update_song_list() {
         writeln!(
             &mut html,
             "<option value=\"{i}\">{}</option>",
-            song.properties.titles.titles[0].title
+            title_for_song(song),
         )
         .unwrap();
     }
@@ -211,12 +211,7 @@ fn show_text_page(text: &str) {
 
 fn show_song_page(song: &Song, page_index: usize) {
     let mut song_html = String::new();
-    writeln!(
-        &mut song_html,
-        "<h1>{}</h1>",
-        song.properties.titles.titles[0].title
-    )
-    .unwrap();
+    writeln!(&mut song_html, "<h1>{}</h1>", title_for_song(song)).unwrap();
 
     let item = &song.lyrics.lyrics[page_index];
     match item {

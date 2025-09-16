@@ -94,6 +94,11 @@ impl PlaylistEntry {
     }
 }
 
+/// Returns the title to use for the given song.
+pub fn title_for_song(song: &Song) -> &str {
+    &song.properties.titles.titles[0].title
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
