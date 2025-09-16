@@ -188,16 +188,26 @@ fn update_playlist() {
                 lines_index,
             } => {
                 let song = &state.songs[song_index];
-                if lines_index == 0 {
-                    writeln!(
-                        &mut html,
-                        "<option>- {}</option>",
-                        song.lyrics.lyrics[lyric_entry_index].name(),
-                    )
-                    .unwrap();
+                let lyric_entry = &song.lyrics.lyrics[lyric_entry_index];
+
+                let first_line = if let LyricEntry::Verse { lines, .. } = lyric_entry {
+                    simplify_contents(&lines[lines_index].contents)
+                        .into_iter()
+                        .next()
                 } else {
-                    writeln!(&mut html, "<option>{lines_index}</option>").unwrap();
+                    None
+                };
+
+                write!(&mut html, "<option>").unwrap();
+                if lines_index == 0 {
+                    write!(&mut html, "- {}", lyric_entry.name(),).unwrap();
+                } else {
+                    write!(&mut html, "...").unwrap();
                 }
+                if let Some(first_line) = first_line {
+                    write!(&mut html, ": {first_line}",).unwrap();
+                }
+                writeln!(&mut html, "</option>").unwrap();
             }
             Slide::Text(text) => {
                 writeln!(&mut html, "<option>{text}</option>").unwrap();
