@@ -4,7 +4,7 @@
 
 mod model;
 
-use crate::model::State;
+use crate::model::{PlaylistEntry, State};
 use gloo_file::{File, FileList, futures::read_as_text};
 use gloo_utils::document;
 use openlyrics::{
@@ -31,6 +31,7 @@ pub fn init() {
 
     add_async_listener_by_id("file", "change", file_changed);
     add_listener_by_id("song_list_form", "submit", add_song_to_playlist);
+    add_listener_by_id("text_form", "submit", add_text_to_playlist);
 }
 
 fn get_element_by_id(id: &str) -> Element {
@@ -74,15 +75,27 @@ fn add_song_to_playlist(event: Event) {
         .selected_index();
     show_output(&format!("selected: {selected}"));
     if selected >= 0 {
-        STATE
-            .lock()
-            .unwrap()
-            .playlist
-            .push(model::PlaylistEntry::Song {
-                song_index: selected.try_into().unwrap(),
-            });
+        STATE.lock().unwrap().playlist.push(PlaylistEntry::Song {
+            song_index: selected.try_into().unwrap(),
+        });
         update_playlist();
     }
+    event.prevent_default();
+}
+
+fn add_text_to_playlist(event: Event) {
+    let text = document()
+        .get_element_by_id("text_entry")
+        .expect("Couldn't find text_entry")
+        .unchecked_into::<HtmlInputElement>()
+        .value();
+    STATE
+        .lock()
+        .unwrap()
+        .playlist
+        .push(PlaylistEntry::Text(text));
+    update_playlist();
+
     event.prevent_default();
 }
 
