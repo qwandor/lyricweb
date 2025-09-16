@@ -93,3 +93,90 @@ impl PlaylistEntry {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use openlyrics::types::{Lines, Lyrics, Properties};
+
+    #[test]
+    fn slides_empty() {
+        let state = State {
+            songs: vec![],
+            playlist: vec![],
+            current_slide: 0,
+        };
+        assert_eq!(state.slides(), vec![]);
+    }
+
+    #[test]
+    fn slides_text() {
+        let state = State {
+            songs: vec![],
+            playlist: vec![
+                PlaylistEntry::Text("foo".to_string()),
+                PlaylistEntry::Text("bar".to_string()),
+            ],
+            current_slide: 0,
+        };
+        assert_eq!(state.slides(), vec![Slide::Text("foo"), Slide::Text("bar")]);
+    }
+
+    #[test]
+    fn slides_song() {
+        let state = State {
+            songs: vec![Song {
+                properties: Properties::default(),
+                lyrics: Lyrics {
+                    lyrics: vec![
+                        LyricEntry::Verse {
+                            name: "v1".to_string(),
+                            lang: None,
+                            translit: None,
+                            lines: vec![
+                                Lines {
+                                    break_optional: None,
+                                    part: None,
+                                    repeat: None,
+                                    contents: vec![],
+                                },
+                                Lines {
+                                    break_optional: None,
+                                    part: None,
+                                    repeat: None,
+                                    contents: vec![],
+                                },
+                            ],
+                        },
+                        LyricEntry::Instrument {
+                            name: "i1".to_string(),
+                            lines: vec![],
+                        },
+                    ],
+                },
+            }],
+            playlist: vec![PlaylistEntry::Song { song_index: 0 }],
+            current_slide: 0,
+        };
+        assert_eq!(
+            state.slides(),
+            vec![
+                Slide::Lyrics {
+                    song_index: 0,
+                    lyric_entry_index: 0,
+                    lines_index: 0,
+                },
+                Slide::Lyrics {
+                    song_index: 0,
+                    lyric_entry_index: 0,
+                    lines_index: 1,
+                },
+                Slide::Lyrics {
+                    song_index: 0,
+                    lyric_entry_index: 1,
+                    lines_index: 0,
+                }
+            ]
+        );
+    }
+}
