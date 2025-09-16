@@ -7,6 +7,7 @@ mod model;
 use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
 use gloo_utils::document;
+use leptos::prelude::*;
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
@@ -28,10 +29,19 @@ fn main() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
+    leptos::mount::mount_to_body(App);
+
     add_async_listener_by_id("file", "change", file_changed);
     add_listener_by_id("song_list_form", "submit", add_song_to_playlist);
     add_listener_by_id("text_form", "submit", add_text_to_playlist);
     add_listener_by_id("playlist", "change", playlist_entry_selected);
+}
+
+#[component]
+fn App() -> impl IntoView {
+    view! {
+        <p>"Leptos"</p>
+    }
 }
 
 fn get_element_by_id(id: &str) -> Element {
