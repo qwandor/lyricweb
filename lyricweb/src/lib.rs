@@ -32,6 +32,7 @@ pub fn init() {
     add_async_listener_by_id("file", "change", file_changed);
     add_listener_by_id("song_list_form", "submit", add_song_to_playlist);
     add_listener_by_id("text_form", "submit", add_text_to_playlist);
+    add_listener_by_id("playlist", "change", playlist_entry_selected);
 }
 
 fn get_element_by_id(id: &str) -> Element {
@@ -127,6 +128,30 @@ async fn open_file(file: &File) {
     }
 }
 
+fn playlist_entry_selected(_event: Event) {
+    let value = document()
+        .get_element_by_id("playlist")
+        .expect("Couldn't find playlist")
+        .unchecked_into::<HtmlSelectElement>()
+        .value();
+    let state = STATE.lock().unwrap();
+    if let Some((playlist_index, page_index)) = value.split_once('_') {
+        let playlist_index = playlist_index.parse::<usize>().unwrap();
+        let page_index = page_index.parse::<usize>().unwrap();
+        let entry = &state.playlist[playlist_index];
+        if let PlaylistEntry::Song { song_index } = entry {
+            let song = &state.songs[*song_index];
+            show_song_page(song, page_index);
+        }
+    } else {
+        let playlist_index = value.parse::<usize>().unwrap();
+        let entry = &state.playlist[playlist_index];
+        if let PlaylistEntry::Text(text) = entry {
+            show_text_page(text);
+        }
+    }
+}
+
 /// Updates the song list in the UI with the list of songs in the model.
 fn update_song_list() {
     let mut html = String::new();
@@ -177,7 +202,14 @@ fn update_playlist() {
         .set_inner_html(&html);
 }
 
-fn show_song(song: &Song) {
+fn show_text_page(text: &str) {
+    let song_element = document()
+        .get_element_by_id("song")
+        .expect("Couldn't find song element");
+    song_element.set_inner_html(&format!("<p>{text}</p>"));
+}
+
+fn show_song_page(song: &Song, page_index: usize) {
     let mut song_html = String::new();
     writeln!(
         &mut song_html,
@@ -185,31 +217,32 @@ fn show_song(song: &Song) {
         song.properties.titles.titles[0].title
     )
     .unwrap();
-    for item in &song.lyrics.lyrics {
-        match item {
-            LyricEntry::Verse { name, lines, .. } => {
-                writeln!(&mut song_html, "<h2>{name}</h2>").unwrap();
-                writeln!(&mut song_html, "<div class=\"verse\">").unwrap();
-                for line in lines {
-                    writeln!(&mut song_html, "<p>").unwrap();
-                    if let Some(part) = &line.part {
-                        writeln!(&mut song_html, "<em>({part})</em><br/>").unwrap();
-                    }
-                    for simple_line in &simplify_contents(&line.contents) {
-                        writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
-                    }
-                    if let Some(repeat) = line.repeat {
-                        writeln!(&mut song_html, "<strong>x{repeat}</strong><br/>").unwrap();
-                    }
-                    writeln!(&mut song_html, "</p>").unwrap();
+
+    let item = &song.lyrics.lyrics[page_index];
+    match item {
+        LyricEntry::Verse { name, lines, .. } => {
+            writeln!(&mut song_html, "<h2>{name}</h2>").unwrap();
+            writeln!(&mut song_html, "<div class=\"verse\">").unwrap();
+            for line in lines {
+                writeln!(&mut song_html, "<p>").unwrap();
+                if let Some(part) = &line.part {
+                    writeln!(&mut song_html, "<em>({part})</em><br/>").unwrap();
                 }
-                writeln!(&mut song_html, "</div>").unwrap();
+                for simple_line in &simplify_contents(&line.contents) {
+                    writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
+                }
+                if let Some(repeat) = line.repeat {
+                    writeln!(&mut song_html, "<strong>x{repeat}</strong><br/>").unwrap();
+                }
+                writeln!(&mut song_html, "</p>").unwrap();
             }
-            LyricEntry::Instrument { name, .. } => {
-                writeln!(&mut song_html, "<p>(instrumental {name})</p>").unwrap()
-            }
+            writeln!(&mut song_html, "</div>").unwrap();
+        }
+        LyricEntry::Instrument { name, .. } => {
+            writeln!(&mut song_html, "<p>(instrumental {name})</p>").unwrap()
         }
     }
+
     let song_element = document()
         .get_element_by_id("song")
         .expect("Couldn't find song element");
