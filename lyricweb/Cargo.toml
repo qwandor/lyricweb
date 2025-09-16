@@ -8,9 +8,6 @@ description = "Web app for displaying song lyrics."
 repository = "https://github.com/qwandor/lyricweb"
 keywords = ["lyrics", "openlyrics", "webapp"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
 gloo-file = { version = "0.3.0", features = ["futures"] }

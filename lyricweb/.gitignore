@@ -1,3 +1,1 @@
-bin/
-pkg/
-wasm-pack.log
+dist/
