@@ -69,6 +69,8 @@ fn add_listener_and_leak(
 }
 
 fn add_song_to_playlist(event: Event) {
+    event.prevent_default();
+
     let selected = document()
         .get_element_by_id("song_list")
         .expect("Couldn't find song_list")
@@ -81,10 +83,11 @@ fn add_song_to_playlist(event: Event) {
         });
         update_playlist();
     }
-    event.prevent_default();
 }
 
 fn add_text_to_playlist(event: Event) {
+    event.prevent_default();
+
     let text = document()
         .get_element_by_id("text_entry")
         .expect("Couldn't find text_entry")
@@ -96,8 +99,6 @@ fn add_text_to_playlist(event: Event) {
         .playlist
         .push(PlaylistEntry::Text(text));
     update_playlist();
-
-    event.prevent_default();
 }
 
 async fn file_changed(_event: Event) {
