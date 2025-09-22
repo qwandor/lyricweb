@@ -10,7 +10,7 @@ keywords = ["lyrics", "openlyrics", "xml"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-clap = { version = "4.5.47", features = ["derive"] }
+clap = { version = "4.5.48", features = ["derive"] }
 eyre = "0.6.12"
 pretty_env_logger = "0.5.0"
 openlyrics = { version = "0.1.0", path = "../openlyrics" }
