@@ -11,7 +11,8 @@ env:
 jobs:
   build:
     permissions:
-      contents: write
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -27,9 +28,10 @@ jobs:
       - name: Trunk build
         run: trunk build --release
         working-directory: lyricweb
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: lyricweb/dist/
       - name: Deploy to GitHub Pages
         if: ${{ github.event_name == 'push' }}
-        uses: JamesIves/github-pages-deploy-action@v4.7.3
-        with:
-          branch: gh-pages
-          folder: lyricweb/dist
+        uses: actions/deploy-pages@v4
