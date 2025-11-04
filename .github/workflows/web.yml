@@ -26,7 +26,7 @@ jobs:
         with:
           version: "v0.21.14"
       - name: Trunk build
-        run: trunk build --release
+        run: trunk build --release --public-url="."
         working-directory: lyricweb
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
