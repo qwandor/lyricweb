@@ -1,0 +1,37 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Rust WASM toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          toolchain: stable
+      - name: Install Trunk
+        uses: jetli/trunk-action@v0.5.1
+        with:
+          version: "v0.21.14"
+      - name: Trunk build
+        run: trunk build --release
+        working-directory: lyricweb
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: lyricweb/dist/
+      - name: Deploy to GitHub Pages
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/deploy-pages@v4

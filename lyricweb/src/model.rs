@@ -20,7 +20,7 @@ impl State {
         }
     }
 
-    pub fn slides(&self) -> Vec<Slide> {
+    pub fn slides(&self) -> Vec<Slide<'_>> {
         let mut slides = Vec::new();
         for entry in &self.playlist {
             match entry {
