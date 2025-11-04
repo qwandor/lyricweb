@@ -10,5 +10,5 @@ keywords = ["lyrics", "openlyrics", "xml"]
 categories = ["parser-implementations"]
 
 [dependencies]
-serde = { version = "1.0.223", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 quick-xml = { version = "0.38.3", features = ["serialize"] }
