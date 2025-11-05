@@ -7,7 +7,7 @@ mod model;
 use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
 use gloo_utils::document;
-use leptos::prelude::*;
+use leptos::{ev::Targeted, prelude::*, task::spawn_local};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
@@ -15,8 +15,7 @@ use openlyrics::{
 use quick_xml::de::from_str;
 use std::{fmt::Write, sync::Mutex};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::spawn_local;
-use web_sys::{Element, Event, EventTarget, HtmlInputElement, HtmlSelectElement};
+use web_sys::{Element, Event, EventTarget, HtmlInputElement, HtmlSelectElement, SubmitEvent};
 
 static STATE: Mutex<State> = Mutex::new(State::new());
 
@@ -31,16 +30,34 @@ fn main() {
 
     leptos::mount::mount_to_body(App);
 
-    add_async_listener_by_id("file", "change", file_changed);
     add_listener_by_id("song_list_form", "submit", add_song_to_playlist);
-    add_listener_by_id("text_form", "submit", add_text_to_playlist);
     add_listener_by_id("playlist", "change", playlist_entry_selected);
 }
 
 #[component]
 fn App() -> impl IntoView {
+    let text_entry = NodeRef::new();
+
     view! {
-        <p>"Leptos"</p>
+        <h1>"Lyricweb"</h1>
+        <form>
+        <input type="file" on:change:target=move |event| spawn_local(file_changed2(event)) />
+        </form>
+        <p id="output2"></p>
+        <p id="error2"></p>
+        <form id="song_list_form2">
+        <select id="song_list2" size="10">
+        </select>
+        <input type="submit" value="Add to playlist" />
+        </form>
+        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap())>
+        <input type="text" node_ref=text_entry />
+        <input type="submit" value="Add to playlist" />
+        </form>
+        <form>
+        <select id="playlist2" size="20"></select>
+        </form>
+        <div id="song2"></div>
     }
 }
 
@@ -48,14 +65,6 @@ fn get_element_by_id(id: &str) -> Element {
     document()
         .get_element_by_id(id)
         .unwrap_or_else(|| panic!("Failed to find element {id}"))
-}
-
-fn add_async_listener_by_id<F: Future<Output = ()> + 'static>(
-    id: &str,
-    event_type: &str,
-    callback: fn(Event) -> F,
-) {
-    add_listener_by_id(id, event_type, move |event| spawn_local(callback(event)));
 }
 
 fn add_listener_by_id(id: &str, event_type: &str, callback: impl Fn(Event) + 'static) {
@@ -94,14 +103,10 @@ fn add_song_to_playlist(event: Event) {
     }
 }
 
-fn add_text_to_playlist(event: Event) {
+fn add_text_to_playlist(event: SubmitEvent, text_entry: HtmlInputElement) {
     event.prevent_default();
 
-    let text = document()
-        .get_element_by_id("text_entry")
-        .expect("Couldn't find text_entry")
-        .unchecked_into::<HtmlInputElement>()
-        .value();
+    let text = text_entry.value();
     STATE
         .lock()
         .unwrap()
@@ -110,13 +115,8 @@ fn add_text_to_playlist(event: Event) {
     update_playlist();
 }
 
-async fn file_changed(_event: Event) {
-    let files = FileList::from(
-        get_element_by_id("file")
-            .unchecked_into::<HtmlInputElement>()
-            .files()
-            .unwrap(),
-    );
+async fn file_changed2(event: Targeted<Event, HtmlInputElement>) {
+    let files = FileList::from(event.target().files().unwrap());
     open_file(files.first().unwrap()).await;
 }
 
