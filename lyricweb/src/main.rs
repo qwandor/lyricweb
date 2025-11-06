@@ -47,12 +47,12 @@ fn App() -> impl IntoView {
         </form>
         <p id="output">{ output }</p>
         <p id="error">{ error }</p>
-        <SongList state=state write_output=write_output/>
+        <SongList state write_output/>
         <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), state.write_only())>
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
-        <Playlist state=state song=song/>
+        <Playlist state song/>
         <div node_ref=song></div>
     }
 }
