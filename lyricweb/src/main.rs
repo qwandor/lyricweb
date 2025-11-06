@@ -6,7 +6,7 @@ mod model;
 
 use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
-use leptos::{ev::Targeted, prelude::*, task::spawn_local};
+use leptos::{ev::Targeted, html::Div, prelude::*, task::spawn_local};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
@@ -34,42 +34,58 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
     let text_entry = NodeRef::new();
-    let song_list = NodeRef::new();
     let song = NodeRef::new();
 
-    let (state, write_state) = signal(State::new());
+    let state = RwSignal::new(State::new());
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
 
     view! {
         <h1>"Lyricweb"</h1>
         <form>
-        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
+        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, state.write_only(), write_output, write_error)) />
         </form>
         <p id="output">{ output }</p>
         <p id="error">{ error }</p>
-        <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
-        <select size="10" node_ref=song_list>
-            <For
-                // TODO: Avoid clone and collect
-                each=move || { state.read().songs.iter().cloned().enumerate().collect::<Vec<_>>() }
-                // TODO: Use a better key
-                key=|(i, _song)| *i
-                children=move |(i, song)| {
-                    view! {
-                        <option value=i>{ move || title_for_song(&song).to_owned() }</option>
-                    }
-                }
-            />
-        </select>
-        <input type="submit" value="Add to playlist" />
-        </form>
-        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), write_state)>
+        <SongList state=state write_output=write_output/>
+        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), state.write_only())>
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
+        <Playlist state=state song=song/>
+        <div node_ref=song></div>
+    }
+}
+
+#[component]
+fn SongList(state: RwSignal<State>, write_output: WriteSignal<Option<String>>) -> impl IntoView {
+    let song_list = NodeRef::new();
+
+    view! {
+        <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), state.write_only(), write_output)>
+            <select size="10" node_ref=song_list>
+                <For
+                    // TODO: Avoid clone and collect
+                    each=move || { state.read().songs.iter().cloned().enumerate().collect::<Vec<_>>() }
+                    // TODO: Use a better key
+                    key=|(i, _song)| *i
+                    children=move |(i, song)| {
+                        view! {
+                            <option value=i>{ move || title_for_song(&song).to_owned() }</option>
+                        }
+                    }
+                />
+            </select>
+            <input type="submit" value="Add to playlist" />
+        </form>
+    }
+}
+
+#[component]
+fn Playlist(state: RwSignal<State>, song: NodeRef<Div>) -> impl IntoView {
+    view! {
         <form>
-        <select size="20" on:change:target=move |event| playlist_entry_selected(event, song.get().unwrap(), state)>
+        <select size="20" on:change:target=move |event| playlist_entry_selected(event, song.get().unwrap(), state.read_only())>
             <For
                 each=move|| { state.read().slides().into_iter().enumerate() }
                 key=|slide| {
@@ -124,7 +140,6 @@ fn App() -> impl IntoView {
             />
         </select>
         </form>
-        <div node_ref=song></div>
     }
 }
 
