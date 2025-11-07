@@ -6,18 +6,15 @@ mod model;
 
 use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
-use leptos::{ev::Targeted, html::Div, prelude::*, task::spawn_local};
+use leptos::{ev::Targeted, prelude::*, task::spawn_local};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
 };
 use quick_xml::de::from_str;
-use std::{
-    fmt::Write,
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::hash::{DefaultHasher, Hash, Hasher};
 use wasm_bindgen::prelude::*;
-use web_sys::{Event, HtmlDivElement, HtmlInputElement, HtmlSelectElement, SubmitEvent};
+use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent};
 
 #[wasm_bindgen]
 extern "C" {
@@ -34,11 +31,11 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
     let text_entry = NodeRef::new();
-    let song = NodeRef::new();
 
     let state = RwSignal::new(State::new());
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
+    let (current_slide, write_current_slide) = signal(None);
 
     view! {
         <h1>"Lyricweb"</h1>
@@ -52,8 +49,8 @@ fn App() -> impl IntoView {
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
-        <Playlist state song/>
-        <div node_ref=song></div>
+        <Playlist state write_current_slide/>
+        <CurrentSlide state=state.read_only() current_slide/>
     }
 }
 
@@ -82,10 +79,18 @@ fn SongList(state: RwSignal<State>, write_output: WriteSignal<Option<String>>) -
 }
 
 #[component]
-fn Playlist(state: RwSignal<State>, song: NodeRef<Div>) -> impl IntoView {
+fn Playlist(
+    state: RwSignal<State>,
+    write_current_slide: WriteSignal<Option<usize>>,
+) -> impl IntoView {
     view! {
         <form>
-        <select size="20" on:change:target=move |event| playlist_entry_selected(event, song.get().unwrap(), state.read_only())>
+        <select size="20"
+            on:change:target=move |event| {
+                if let Ok(selected_index) = usize::try_from(event.target().selected_index()) {
+                    write_current_slide.set(Some(selected_index))
+                }
+            }>
             <For
                 each=move|| { state.read().slides().into_iter().enumerate() }
                 key=|slide| {
@@ -140,6 +145,31 @@ fn Playlist(state: RwSignal<State>, song: NodeRef<Div>) -> impl IntoView {
             />
         </select>
         </form>
+    }
+}
+
+#[component]
+fn CurrentSlide(
+    state: ReadSignal<State>,
+    current_slide: ReadSignal<Option<usize>>,
+) -> impl IntoView {
+    view! {
+        { move || {
+            let state = state.read();
+            let slide = &state.slides()[current_slide.get()?];
+            match slide {
+                Slide::SongStart { .. } => None,
+                Slide::Lyrics {
+                    song_index,
+                    lyric_entry_index,
+                    lines_index,
+                } => {
+                    let song = &state.songs[*song_index];
+                    Some(song_page(song, *lyric_entry_index, *lines_index).into_any())
+                }
+                Slide::Text(text) => Some(text_page(text).into_any()),
+            }
+        } }
     }
 }
 
@@ -211,71 +241,36 @@ async fn open_file(
     }
 }
 
-fn playlist_entry_selected(
-    event: Targeted<Event, HtmlSelectElement>,
-    song_element: HtmlDivElement,
-    state: ReadSignal<State>,
-) {
-    let selected_index = event.target().selected_index();
-    let Ok(selected_index) = usize::try_from(selected_index) else {
-        return;
-    };
-    let state = state.read();
-    let slide = &state.slides()[selected_index];
-    match slide {
-        Slide::Lyrics {
-            song_index,
-            lyric_entry_index,
-            lines_index,
-        } => {
-            let song = &state.songs[*song_index];
-            show_song_page(song_element, song, *lyric_entry_index, *lines_index);
-        }
-        Slide::Text(text) => {
-            show_text_page(song_element, text);
-        }
-        Slide::SongStart { .. } => {}
+fn text_page(text: &str) -> impl IntoView {
+    view! {
+        <p>{text}</p>
     }
 }
 
-fn show_text_page(song_element: HtmlDivElement, text: &str) {
-    song_element.set_inner_html(&format!("<p>{text}</p>"));
-}
-
-fn show_song_page(
-    song_element: HtmlDivElement,
-    song: &Song,
-    lyric_entry_index: usize,
-    lines_index: usize,
-) {
-    let mut song_html = String::new();
-    writeln!(&mut song_html, "<h1>{}</h1>", title_for_song(song)).unwrap();
-
+fn song_page(song: &Song, lyric_entry_index: usize, lines_index: usize) -> impl IntoView {
     let item = &song.lyrics.lyrics[lyric_entry_index];
-    match item {
-        LyricEntry::Verse { name, lines, .. } => {
-            writeln!(&mut song_html, "<h2>{name}</h2>").unwrap();
-            writeln!(&mut song_html, "<div class=\"verse\">").unwrap();
-            let line = &lines[lines_index];
 
-            writeln!(&mut song_html, "<p>").unwrap();
-            if let Some(part) = &line.part {
-                writeln!(&mut song_html, "<em>({part})</em><br/>").unwrap();
+    view! {
+        <h1>{ title_for_song(song) }</h1>
+        {
+            match item {
+                LyricEntry::Verse { name, lines, .. } => {
+                    let line = &lines[lines_index];
+                    view! {
+                        <h2>{name.as_str()}</h2>
+                        <div class="verse">
+                        <p>
+                        { line.part.as_ref().map(|part| view! { <em>"(" {part.as_str()} ")"</em><br/> }) }
+                        { simplify_contents(&line.contents).into_iter().map(|simple_line| view! { {simple_line} <br/> } ).collect::<Vec<_>>() }
+                        { line.repeat.map(|repeat| view! { <strong>"x" {repeat}</strong><br/> } ) }
+                        </p>
+                        </div>
+                    }.into_any()
+                }
+                LyricEntry::Instrument { name, .. } => {
+                    view! { <p>"(instrumental " {name.as_str()} ")"</p> }.into_any()
+                }
             }
-            for simple_line in &simplify_contents(&line.contents) {
-                writeln!(&mut song_html, "{simple_line}<br/>").unwrap();
-            }
-            if let Some(repeat) = line.repeat {
-                writeln!(&mut song_html, "<strong>x{repeat}</strong><br/>").unwrap();
-            }
-            writeln!(&mut song_html, "</p>").unwrap();
-
-            writeln!(&mut song_html, "</div>").unwrap();
-        }
-        LyricEntry::Instrument { name, .. } => {
-            writeln!(&mut song_html, "<p>(instrumental {name})</p>").unwrap()
         }
     }
-
-    song_element.set_inner_html(&song_html);
 }
