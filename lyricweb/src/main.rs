@@ -13,13 +13,7 @@ use openlyrics::{
 };
 use quick_xml::de::from_str;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use wasm_bindgen::prelude::*;
 use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent};
-
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
