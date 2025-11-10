@@ -81,10 +81,11 @@ fn open_presentation(
         .open_with_url_and_target_and_features(&"", &"", &"popup=true")
         .unwrap()
         .unwrap();
-    let presentation_body = new_presentation_window.document().unwrap().body().unwrap();
-    let unmount_handle = mount_to_renderer(&presentation_body, move || {
-        presentation(state, current_slide).into_any()
-    });
+    let document = new_presentation_window.document().unwrap();
+    document.set_title("Lyricweb Presentation");
+    let body = document.body().unwrap();
+    let unmount_handle =
+        mount_to_renderer(&body, move || presentation(state, current_slide).into_any());
     *presentation_window = Some((new_presentation_window, unmount_handle));
 }
 
