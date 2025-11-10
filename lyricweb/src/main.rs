@@ -16,6 +16,7 @@ use std::{
     cell::RefCell,
     hash::{DefaultHasher, Hash, Hasher},
 };
+use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent, Window};
 
 fn main() {
@@ -59,10 +60,17 @@ fn App() -> impl IntoView {
 fn presentation(
     state: ReadSignal<State>,
     current_slide: ReadSignal<Option<usize>>,
+    stylesheets: &[String],
 ) -> impl IntoView {
     view! {
+        <head>
+        <title>Lyricweb Presentation</title>
+        {stylesheets.into_iter().map(|url| view! { <link href={url} rel="stylesheet"/> } ).collect::<Vec<_>>() }
+        </head>
+        <body>
         <h1>Presentation</h1>
         <CurrentSlide state=state current_slide/>
+        </body>
     }
 }
 
@@ -81,11 +89,26 @@ fn open_presentation(
         .open_with_url_and_target_and_features(&"", &"", &"popup=true")
         .unwrap()
         .unwrap();
-    let document = new_presentation_window.document().unwrap();
-    document.set_title("Lyricweb Presentation");
-    let body = document.body().unwrap();
-    let unmount_handle =
-        mount_to_renderer(&body, move || presentation(state, current_slide).into_any());
+    let presentation_document = new_presentation_window.document().unwrap();
+
+    // Remove existing children of the window before mounting to it, to avoid duplicate head and
+    // body nodes.
+    let document_element = presentation_document.document_element().unwrap();
+    while let Some(child) = document_element.last_child() {
+        document_element.remove_child(&child).unwrap();
+    }
+
+    // Copy stylesheets from the main window.
+    let stylesheets = document().style_sheets();
+    let mut stylesheet_urls = Vec::new();
+    for i in 0..stylesheets.length() {
+        let stylesheet = stylesheets.item(i).unwrap();
+        stylesheet_urls.extend(stylesheet.href().unwrap());
+    }
+
+    let unmount_handle = mount_to(document_element.unchecked_into(), move || {
+        presentation(state, current_slide, &stylesheet_urls).into_any()
+    });
     *presentation_window = Some((new_presentation_window, unmount_handle));
 }
 
