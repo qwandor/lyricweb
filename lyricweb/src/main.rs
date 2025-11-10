@@ -6,14 +6,17 @@ mod model;
 
 use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
-use leptos::{ev::Targeted, prelude::*, task::spawn_local};
+use leptos::{ev::Targeted, prelude::*, tachys::view::any_view::AnyViewState, task::spawn_local};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
 };
 use quick_xml::de::from_str;
-use std::hash::{DefaultHasher, Hash, Hasher};
-use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent};
+use std::{
+    cell::RefCell,
+    hash::{DefaultHasher, Hash, Hasher},
+};
+use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent, Window};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -31,6 +34,8 @@ fn App() -> impl IntoView {
     let (error, write_error) = signal(None);
     let (current_slide, write_current_slide) = signal(None);
 
+    let presentation_window = RefCell::new(None);
+
     view! {
         <h1>"Lyricweb"</h1>
         <form>
@@ -44,8 +49,43 @@ fn App() -> impl IntoView {
         <input type="submit" value="Add to playlist" />
         </form>
         <Playlist state write_current_slide/>
+        <form>
+        <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut(), state.read_only(), current_slide)/>
+        </form>
         <CurrentSlide state=state.read_only() current_slide/>
     }
+}
+
+fn presentation(
+    state: ReadSignal<State>,
+    current_slide: ReadSignal<Option<usize>>,
+) -> impl IntoView {
+    view! {
+        <h1>Presentation</h1>
+        <CurrentSlide state=state current_slide/>
+    }
+}
+
+/// Opens a new window to show the presentation.
+fn open_presentation(
+    presentation_window: &mut Option<(Window, UnmountHandle<AnyViewState>)>,
+    state: ReadSignal<State>,
+    current_slide: ReadSignal<Option<usize>>,
+) {
+    // If there's already a presentation window open, close it.
+    if let Some((presentation_window, _)) = presentation_window {
+        presentation_window.close().unwrap();
+    }
+
+    let new_presentation_window = window()
+        .open_with_url_and_target_and_features(&"", &"", &"popup=true")
+        .unwrap()
+        .unwrap();
+    let presentation_body = new_presentation_window.document().unwrap().body().unwrap();
+    let unmount_handle = mount_to_renderer(&presentation_body, move || {
+        presentation(state, current_slide).into_any()
+    });
+    *presentation_window = Some((new_presentation_window, unmount_handle));
 }
 
 #[component]
