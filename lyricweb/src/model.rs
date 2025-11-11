@@ -20,7 +20,7 @@ impl State {
         }
     }
 
-    pub fn slides(&self) -> Vec<Slide<'_>> {
+    pub fn slides(&self) -> Vec<Slide> {
         let mut slides = Vec::new();
         for entry in &self.playlist {
             match entry {
@@ -48,15 +48,15 @@ impl State {
                         }
                     }
                 }
-                PlaylistEntry::Text(text) => slides.push(Slide::Text(&text)),
+                PlaylistEntry::Text(text) => slides.push(Slide::Text(text.to_owned())),
             }
         }
         slides
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Slide<'a> {
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum Slide {
     SongStart {
         song_index: usize,
     },
@@ -65,7 +65,8 @@ pub enum Slide<'a> {
         lyric_entry_index: usize,
         lines_index: usize,
     },
-    Text(&'a str),
+    // TODO: Make this borrow from the state rather than cloning
+    Text(String),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -104,7 +105,13 @@ mod tests {
             ],
             current_slide: 0,
         };
-        assert_eq!(state.slides(), vec![Slide::Text("foo"), Slide::Text("bar")]);
+        assert_eq!(
+            state.slides(),
+            vec![
+                Slide::Text("foo".to_string()),
+                Slide::Text("bar".to_string()),
+            ]
+        );
     }
 
     #[test]
