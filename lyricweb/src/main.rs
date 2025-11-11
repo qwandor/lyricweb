@@ -119,17 +119,14 @@ fn SongList(state: RwSignal<State>, write_output: WriteSignal<Option<String>>) -
     view! {
         <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), state.write_only(), write_output)>
             <select size="10" node_ref=song_list>
-                <For
-                    // TODO: Avoid clone and collect
-                    each=move || { state.read().songs.iter().cloned().enumerate().collect::<Vec<_>>() }
-                    // TODO: Use a better key
-                    key=|(i, _song)| *i
-                    children=move |(i, song)| {
+                {move || {
+                    let state = state.read();
+                    state.songs.iter().enumerate().map(|(i, song)| {
                         view! {
-                            <option value=i>{ move || title_for_song(&song).to_owned() }</option>
+                            <option value=i>{title_for_song(&song).to_owned()}</option>
                         }
-                    }
-                />
+                    }).collect::<Vec<_>>()
+                }}
             </select>
             <input type="submit" value="Add to playlist" />
         </form>
