@@ -12,10 +12,7 @@ use openlyrics::{
     types::{LyricEntry, Song},
 };
 use quick_xml::de::from_str;
-use std::{
-    cell::RefCell,
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::cell::RefCell;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent, Window};
 
@@ -146,19 +143,13 @@ fn Playlist(
                     write_current_slide.set(Some(selected_index))
                 }
             }>
-            <For
-                each=move|| { state.read().slides().into_iter().enumerate() }
-                key=|slide| {
-                    // Include both index and value in key, as a slide might be repeated.
-                    let mut hasher = DefaultHasher::new();
-                    slide.hash(&mut hasher);
-                    hasher.finish()
-                }
-                children=move |(_, slide)| {
+            {move ||{
+                let state = state.read();
+                state.slides().into_iter().map(|slide| {
                     match slide {
                         Slide::SongStart { song_index } => {
                             view! {
-                                <option disabled>{ move || title_for_song(&state.read().songs[song_index]).to_owned() }</option>
+                                <option disabled>{ title_for_song(&state.songs[song_index]).to_owned() }</option>
                             }.into_any()
                         }
                         Slide::Lyrics {
@@ -166,7 +157,6 @@ fn Playlist(
                             lyric_entry_index,
                             lines_index,
                         } => {
-                            let state = state.read();
                             let song = &state.songs[song_index];
                             let lyric_entry = &song.lyrics.lyrics[lyric_entry_index];
 
@@ -196,8 +186,8 @@ fn Playlist(
                             }.into_any()
                         }
                     }
-                }
-            />
+                }).collect::<Vec<_>>()
+            }}
         </select>
         </form>
     }
