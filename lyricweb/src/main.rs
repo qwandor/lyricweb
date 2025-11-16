@@ -54,7 +54,7 @@ fn App() -> impl IntoView {
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
-        <Playlist state current_slide write_current_slide/>
+        <Playlist state write_state current_slide write_current_slide/>
         <form>
         <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut(), state, current_slide)/>
         </form>
@@ -145,6 +145,7 @@ fn SongList(
 #[component]
 fn Playlist(
     state: Signal<State>,
+    write_state: WriteSignal<State>,
     current_slide: Signal<Option<usize>>,
     write_current_slide: WriteSignal<Option<usize>>,
 ) -> impl IntoView {
@@ -203,7 +204,28 @@ fn Playlist(
                 }).collect::<Vec<_>>()
             }}
         </select>
+        <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide)/>
+        <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, -1)/>
+        <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, 1)/>
         </form>
+    }
+}
+
+/// Removes the current slide's entry from the playlist.
+fn remove_from_playlist(write_state: WriteSignal<State>, current_slide: Signal<Option<usize>>) {
+    if let Some(current_slide) = current_slide.get() {
+        write_state.update(|state| state.remove_slide_index(current_slide));
+    }
+}
+
+/// Moves the current slide's entry up or down in the playlist.
+fn move_in_playlist(
+    write_state: WriteSignal<State>,
+    current_slide: Signal<Option<usize>>,
+    offset: isize,
+) {
+    if let Some(current_slide) = current_slide.get() {
+        write_state.update(|state| state.move_slide_index(current_slide, offset));
     }
 }
 

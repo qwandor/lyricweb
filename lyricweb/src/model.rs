@@ -52,6 +52,52 @@ impl State {
         }
         slides
     }
+
+    /// Returns the index of the entry containing the given slide index.
+    fn entry_for_slide(&self, slide_index: usize) -> Option<usize> {
+        let mut entry_count = 0;
+        for (i, entry) in self.playlist.iter().enumerate() {
+            match entry {
+                PlaylistEntry::Song { song_index } => {
+                    let song = &self.songs[*song_index];
+                    entry_count += 1 + song
+                        .lyrics
+                        .lyrics
+                        .iter()
+                        .map(|item| match item {
+                            LyricEntry::Verse { lines, .. } => lines.len(),
+                            LyricEntry::Instrument { .. } => 1,
+                        })
+                        .sum::<usize>();
+                }
+                PlaylistEntry::Text(_) => {
+                    entry_count += 1;
+                }
+            }
+            if slide_index < entry_count {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    /// Removes the playlist entry containing the slide at the given index.
+    pub fn remove_slide_index(&mut self, slide_index: usize) {
+        if let Some(entry_index) = self.entry_for_slide(slide_index) {
+            self.playlist.remove(entry_index);
+        }
+    }
+
+    /// Moves the playlist entry containing the slide at the given index up or down by the given
+    /// offset.
+    pub fn move_slide_index(&mut self, slide_index: usize, offset: isize) {
+        if let Some(entry_index) = self.entry_for_slide(slide_index)
+            && let Some(new_index) = entry_index.checked_add_signed(offset)
+            && new_index < self.playlist.len()
+        {
+            self.playlist.swap(entry_index, new_index);
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
