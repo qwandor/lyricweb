@@ -4,7 +4,7 @@
 
 mod model;
 
-use crate::model::{PlaylistEntry, Slide, State, title_for_song};
+use crate::model::{PlaylistEntry, Slide, SlideIndex, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
 use leptos::{
     ev::Targeted,
@@ -64,7 +64,7 @@ fn App() -> impl IntoView {
 
 fn presentation(
     state: Signal<State>,
-    current_slide: Signal<Option<usize>>,
+    current_slide: Signal<Option<SlideIndex>>,
     stylesheets: &[String],
 ) -> impl IntoView {
     view! {
@@ -83,7 +83,7 @@ fn presentation(
 fn open_presentation(
     presentation_window: &mut Option<(Window, UnmountHandle<AnyViewState>)>,
     state: Signal<State>,
-    current_slide: Signal<Option<usize>>,
+    current_slide: Signal<Option<SlideIndex>>,
 ) {
     // If there's already a presentation window open, close it.
     if let Some((presentation_window, _)) = presentation_window {
@@ -146,25 +146,25 @@ fn SongList(
 fn Playlist(
     state: Signal<State>,
     write_state: WriteSignal<State>,
-    current_slide: Signal<Option<usize>>,
-    write_current_slide: WriteSignal<Option<usize>>,
+    current_slide: Signal<Option<SlideIndex>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
 ) -> impl IntoView {
     view! {
         <form>
         <select size="20"
             on:change:target=move |event| {
-                if let Ok(selected_index) = usize::try_from(event.target().selected_index()) {
-                    write_current_slide.set(Some(selected_index))
+                if let Ok(slide_index) = event.target().value().parse() {
+                    write_current_slide.set(Some(slide_index));
                 }
             }
-            prop:selectedIndex=move || current_slide.get().map(|i| i as i32).unwrap_or(-1)>
+            prop:value=move || current_slide.get().map(|index| index.to_string()).unwrap_or_default()>
             {move ||{
                 let state = state.read();
-                state.slides().into_iter().map(|slide| {
+                state.slides().into_iter().map(|(slide_index, slide)| {
                     match slide {
                         Slide::SongStart { song_index } => {
                             view! {
-                                <option disabled>{ title_for_song(&state.songs[song_index]).to_owned() }</option>
+                                <option disabled value={slide_index.to_string()}>{ title_for_song(&state.songs[song_index]).to_owned() }</option>
                             }.into_any()
                         }
                         Slide::Lyrics {
@@ -184,7 +184,7 @@ fn Playlist(
                             };
 
                             view! {
-                                <option>{
+                                <option value={slide_index.to_string()}>{
                                     if lines_index == 0 {
                                         format!("- {}", lyric_entry.name())
                                     } else {
@@ -197,44 +197,74 @@ fn Playlist(
                         }
                         Slide::Text(text) => {
                             view! {
-                                <option>{ text }</option>
+                                <option value={slide_index.to_string()}>{ text }</option>
                             }.into_any()
                         }
                     }
                 }).collect::<Vec<_>>()
             }}
         </select>
-        <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide)/>
-        <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, -1)/>
-        <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, 1)/>
+        <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
+        <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
+        <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
         </form>
     }
 }
 
 /// Removes the current slide's entry from the playlist.
-fn remove_from_playlist(write_state: WriteSignal<State>, current_slide: Signal<Option<usize>>) {
-    if let Some(current_slide) = current_slide.get() {
-        write_state.update(|state| state.remove_slide_index(current_slide));
+fn remove_from_playlist(
+    write_state: WriteSignal<State>,
+    current_slide: Signal<Option<SlideIndex>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+) {
+    if let Some(mut current_slide) = current_slide.get() {
+        write_state.update(|state| {
+            state.playlist.remove(current_slide.entry_index);
+
+            if state.playlist.is_empty() {
+                write_current_slide.set(None);
+            } else {
+                // Ensure that current_slide is still within range.
+                current_slide.page_index = 0;
+                if current_slide.entry_index >= state.playlist.len() {
+                    current_slide.entry_index -= 1;
+                }
+                write_current_slide.set(Some(current_slide));
+            }
+        });
     }
 }
 
 /// Moves the current slide's entry up or down in the playlist.
 fn move_in_playlist(
     write_state: WriteSignal<State>,
-    current_slide: Signal<Option<usize>>,
+    current_slide: Signal<Option<SlideIndex>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
     offset: isize,
 ) {
     if let Some(current_slide) = current_slide.get() {
-        write_state.update(|state| state.move_slide_index(current_slide, offset));
+        let mut moved = false;
+        write_state
+            .update(|state| moved = state.move_entry_index(current_slide.entry_index, offset));
+        if moved {
+            write_current_slide.update(|current_slide| {
+                if let Some(current_slide) = current_slide {
+                    current_slide.entry_index = current_slide
+                        .entry_index
+                        .checked_add_signed(offset)
+                        .unwrap();
+                }
+            });
+        }
     }
 }
 
 #[component]
-fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<usize>>) -> impl IntoView {
+fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<SlideIndex>>) -> impl IntoView {
     view! {
         { move || {
             let state = state.read();
-            let slide = &state.slides()[current_slide.get()?];
+            let slide = &state.slide(current_slide.get()?)?;
             match slide {
                 Slide::SongStart { .. } => None,
                 Slide::Lyrics {
