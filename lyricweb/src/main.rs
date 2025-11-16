@@ -130,9 +130,9 @@ fn SongList(
             <select size="10" node_ref=song_list>
                 {move || {
                     let state = state.read();
-                    state.songs.iter().enumerate().map(|(i, song)| {
+                    state.songs.iter().map(|song| {
                         view! {
-                            <option value=i>{title_for_song(&song).to_owned()}</option>
+                            <option>{title_for_song(&song).to_owned()}</option>
                         }
                     }).collect::<Vec<_>>()
                 }}
