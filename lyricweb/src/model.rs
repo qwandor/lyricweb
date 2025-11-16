@@ -8,7 +8,6 @@ use openlyrics::types::{LyricEntry, Song};
 pub struct State {
     pub songs: Vec<Song>,
     pub playlist: Vec<PlaylistEntry>,
-    pub current_slide: usize,
 }
 
 impl State {
@@ -16,7 +15,6 @@ impl State {
         Self {
             songs: Vec::new(),
             playlist: Vec::new(),
-            current_slide: 0,
         }
     }
 
@@ -48,14 +46,14 @@ impl State {
                         }
                     }
                 }
-                PlaylistEntry::Text(text) => slides.push(Slide::Text(&text)),
+                PlaylistEntry::Text(text) => slides.push(Slide::Text(text)),
             }
         }
         slides
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Slide<'a> {
     SongStart {
         song_index: usize,
@@ -89,7 +87,6 @@ mod tests {
         let state = State {
             songs: vec![],
             playlist: vec![],
-            current_slide: 0,
         };
         assert_eq!(state.slides(), vec![]);
     }
@@ -102,7 +99,6 @@ mod tests {
                 PlaylistEntry::Text("foo".to_string()),
                 PlaylistEntry::Text("bar".to_string()),
             ],
-            current_slide: 0,
         };
         assert_eq!(state.slides(), vec![Slide::Text("foo"), Slide::Text("bar")]);
     }
@@ -141,7 +137,6 @@ mod tests {
                 },
             }],
             playlist: vec![PlaylistEntry::Song { song_index: 0 }],
-            current_slide: 0,
         };
         assert_eq!(
             state.slides(),
