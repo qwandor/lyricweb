@@ -54,7 +54,7 @@ fn App() -> impl IntoView {
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
-        <Playlist state write_current_slide/>
+        <Playlist state current_slide write_current_slide/>
         <form>
         <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut(), state, current_slide)/>
         </form>
@@ -145,6 +145,7 @@ fn SongList(
 #[component]
 fn Playlist(
     state: Signal<State>,
+    current_slide: Signal<Option<usize>>,
     write_current_slide: WriteSignal<Option<usize>>,
 ) -> impl IntoView {
     view! {
@@ -154,7 +155,8 @@ fn Playlist(
                 if let Ok(selected_index) = usize::try_from(event.target().selected_index()) {
                     write_current_slide.set(Some(selected_index))
                 }
-            }>
+            }
+            prop:selectedIndex=move || current_slide.get().map(|i| i as i32).unwrap_or(-1)>
             {move ||{
                 let state = state.read();
                 state.slides().into_iter().map(|slide| {
