@@ -205,8 +205,8 @@ fn Playlist(
             }}
         </select>
         <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide)/>
-        <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, -1)/>
-        <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, 1)/>
+        <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
+        <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
         </form>
     }
 }
@@ -215,6 +215,7 @@ fn Playlist(
 fn remove_from_playlist(write_state: WriteSignal<State>, current_slide: Signal<Option<usize>>) {
     if let Some(current_slide) = current_slide.get() {
         write_state.update(|state| state.remove_slide_index(current_slide));
+        // TODO: Ensure that current_slide is still within range.
     }
 }
 
@@ -222,10 +223,21 @@ fn remove_from_playlist(write_state: WriteSignal<State>, current_slide: Signal<O
 fn move_in_playlist(
     write_state: WriteSignal<State>,
     current_slide: Signal<Option<usize>>,
+    write_current_slide: WriteSignal<Option<usize>>,
     offset: isize,
 ) {
     if let Some(current_slide) = current_slide.get() {
-        write_state.update(|state| state.move_slide_index(current_slide, offset));
+        let mut moved = false;
+        write_state.update(|state| moved = state.move_slide_index(current_slide, offset));
+        if moved {
+            write_current_slide.update(|current_slide| {
+                if let Some(current_slide) = current_slide {
+                    // TODO: Fix the case where an entry is moved past a song, and so the slide
+                    // offset is more than 1.
+                    *current_slide = current_slide.checked_add_signed(offset).unwrap();
+                }
+            });
+        }
     }
 }
 

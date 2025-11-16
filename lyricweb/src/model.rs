@@ -90,12 +90,18 @@ impl State {
 
     /// Moves the playlist entry containing the slide at the given index up or down by the given
     /// offset.
-    pub fn move_slide_index(&mut self, slide_index: usize, offset: isize) {
+    ///
+    /// Returns true if a change was made, or false if nothing was changed because the offset or
+    /// slide was out of range.
+    pub fn move_slide_index(&mut self, slide_index: usize, offset: isize) -> bool {
         if let Some(entry_index) = self.entry_for_slide(slide_index)
             && let Some(new_index) = entry_index.checked_add_signed(offset)
             && new_index < self.playlist.len()
         {
             self.playlist.swap(entry_index, new_index);
+            true
+        } else {
+            false
         }
     }
 }
