@@ -3,8 +3,9 @@
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
 use openlyrics::types::{LyricEntry, Song};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct State {
     pub songs: Vec<Song>,
     pub playlist: Vec<PlaylistEntry>,
@@ -66,7 +67,7 @@ pub enum Slide<'a> {
     Text(&'a str),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum PlaylistEntry {
     Song { song_index: usize },
     Text(String),

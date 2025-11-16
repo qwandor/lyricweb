@@ -6,7 +6,14 @@ mod model;
 
 use crate::model::{PlaylistEntry, Slide, State, title_for_song};
 use gloo_file::{File, FileList, futures::read_as_text};
-use leptos::{ev::Targeted, prelude::*, tachys::view::any_view::AnyViewState, task::spawn_local};
+use leptos::{
+    ev::Targeted,
+    prelude::*,
+    server::codee::string::{FromToStringCodec, JsonSerdeCodec, OptionCodec},
+    tachys::view::any_view::AnyViewState,
+    task::spawn_local,
+};
+use leptos_use::storage::use_local_storage;
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
@@ -27,36 +34,37 @@ fn main() {
 fn App() -> impl IntoView {
     let text_entry = NodeRef::new();
 
-    let state = RwSignal::new(State::new());
+    let (state, write_state, _) = use_local_storage::<_, JsonSerdeCodec>("state");
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
-    let (current_slide, write_current_slide) = signal(None);
+    let (current_slide, write_current_slide, _) =
+        use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_slide");
 
     let presentation_window = RefCell::new(None);
 
     view! {
         <h1>"Lyricweb"</h1>
         <form>
-        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, state.write_only(), write_output, write_error)) />
+        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
         </form>
         <p id="output">{ output }</p>
         <p id="error">{ error }</p>
-        <SongList state write_output/>
-        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), state.write_only())>
+        <SongList state write_state write_output/>
+        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), write_state)>
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
         <Playlist state write_current_slide/>
         <form>
-        <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut(), state.read_only(), current_slide)/>
+        <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut(), state, current_slide)/>
         </form>
-        <CurrentSlide state=state.read_only() current_slide/>
+        <CurrentSlide state current_slide/>
     }
 }
 
 fn presentation(
-    state: ReadSignal<State>,
-    current_slide: ReadSignal<Option<usize>>,
+    state: Signal<State>,
+    current_slide: Signal<Option<usize>>,
     stylesheets: &[String],
 ) -> impl IntoView {
     view! {
@@ -66,7 +74,7 @@ fn presentation(
         </head>
         <body>
         <h1>Presentation</h1>
-        <CurrentSlide state=state current_slide/>
+        <CurrentSlide state current_slide/>
         </body>
     }
 }
@@ -74,8 +82,8 @@ fn presentation(
 /// Opens a new window to show the presentation.
 fn open_presentation(
     presentation_window: &mut Option<(Window, UnmountHandle<AnyViewState>)>,
-    state: ReadSignal<State>,
-    current_slide: ReadSignal<Option<usize>>,
+    state: Signal<State>,
+    current_slide: Signal<Option<usize>>,
 ) {
     // If there's already a presentation window open, close it.
     if let Some((presentation_window, _)) = presentation_window {
@@ -110,11 +118,15 @@ fn open_presentation(
 }
 
 #[component]
-fn SongList(state: RwSignal<State>, write_output: WriteSignal<Option<String>>) -> impl IntoView {
+fn SongList(
+    state: Signal<State>,
+    write_state: WriteSignal<State>,
+    write_output: WriteSignal<Option<String>>,
+) -> impl IntoView {
     let song_list = NodeRef::new();
 
     view! {
-        <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), state.write_only(), write_output)>
+        <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
             <select size="10" node_ref=song_list>
                 {move || {
                     let state = state.read();
@@ -132,7 +144,7 @@ fn SongList(state: RwSignal<State>, write_output: WriteSignal<Option<String>>) -
 
 #[component]
 fn Playlist(
-    state: RwSignal<State>,
+    state: Signal<State>,
     write_current_slide: WriteSignal<Option<usize>>,
 ) -> impl IntoView {
     view! {
@@ -194,10 +206,7 @@ fn Playlist(
 }
 
 #[component]
-fn CurrentSlide(
-    state: ReadSignal<State>,
-    current_slide: ReadSignal<Option<usize>>,
-) -> impl IntoView {
+fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<usize>>) -> impl IntoView {
     view! {
         { move || {
             let state = state.read();
