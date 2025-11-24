@@ -10,8 +10,11 @@ use leptos::{
     ev::Targeted,
     prelude::*,
     server::codee::string::{FromToStringCodec, JsonSerdeCodec, OptionCodec},
-    tachys::view::any_view::AnyViewState,
     task::spawn_local,
+};
+use leptos_router::{
+    components::{Route, Router, Routes},
+    path,
 };
 use leptos_use::storage::use_local_storage;
 use openlyrics::{
@@ -20,7 +23,6 @@ use openlyrics::{
 };
 use quick_xml::de::from_str;
 use std::cell::RefCell;
-use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, HtmlSelectElement, SubmitEvent, Window};
 
 fn main() {
@@ -32,13 +34,36 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    let text_entry = NodeRef::new();
-
     let (state, write_state, _) = use_local_storage::<_, JsonSerdeCodec>("state");
-    let (output, write_output) = signal(None);
-    let (error, write_error) = signal(None);
     let (current_slide, write_current_slide, _) =
         use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_slide");
+
+    view! {
+        <Router>
+            <Routes fallback=|| "Not found">
+                <Route path=path!("/") view=move || view! {
+                    <Controller state write_state current_slide write_current_slide/>
+                }/>
+                <Route path=path!("/present") view=move || view! {
+                    <CurrentSlide state current_slide/>
+                }/>
+            </Routes>
+        </Router>
+    }
+}
+
+/// The main view for controlling the presentation.
+#[component]
+fn Controller(
+    state: Signal<State>,
+    write_state: WriteSignal<State>,
+    current_slide: Signal<Option<SlideIndex>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+) -> impl IntoView {
+    let text_entry = NodeRef::new();
+
+    let (output, write_output) = signal(None);
+    let (error, write_error) = signal(None);
 
     let presentation_window = RefCell::new(None);
 
@@ -56,65 +81,25 @@ fn App() -> impl IntoView {
         </form>
         <Playlist state write_state current_slide write_current_slide/>
         <form>
-        <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut(), state, current_slide)/>
+        <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
         </form>
         <CurrentSlide state current_slide/>
     }
 }
 
-fn presentation(
-    state: Signal<State>,
-    current_slide: Signal<Option<SlideIndex>>,
-    stylesheets: &[String],
-) -> impl IntoView {
-    view! {
-        <head>
-        <title>Lyricweb Presentation</title>
-        {stylesheets.into_iter().map(|url| view! { <link href={url} rel="stylesheet"/> } ).collect::<Vec<_>>() }
-        </head>
-        <body>
-        <h1>Presentation</h1>
-        <CurrentSlide state current_slide/>
-        </body>
-    }
-}
-
 /// Opens a new window to show the presentation.
-fn open_presentation(
-    presentation_window: &mut Option<(Window, UnmountHandle<AnyViewState>)>,
-    state: Signal<State>,
-    current_slide: Signal<Option<SlideIndex>>,
-) {
+fn open_presentation(presentation_window: &mut Option<Window>) {
     // If there's already a presentation window open, close it.
-    if let Some((presentation_window, _)) = presentation_window {
+    if let Some(presentation_window) = presentation_window {
         presentation_window.close().unwrap();
     }
 
     let new_presentation_window = window()
-        .open_with_url_and_target_and_features(&"", &"", &"popup=true")
+        .open_with_url_and_target_and_features(&"/present", &"", &"popup=true")
         .unwrap()
         .unwrap();
-    let presentation_document = new_presentation_window.document().unwrap();
 
-    // Remove existing children of the window before mounting to it, to avoid duplicate head and
-    // body nodes.
-    let document_element = presentation_document.document_element().unwrap();
-    while let Some(child) = document_element.last_child() {
-        document_element.remove_child(&child).unwrap();
-    }
-
-    // Copy stylesheets from the main window.
-    let stylesheets = document().style_sheets();
-    let mut stylesheet_urls = Vec::new();
-    for i in 0..stylesheets.length() {
-        let stylesheet = stylesheets.item(i).unwrap();
-        stylesheet_urls.extend(stylesheet.href().unwrap());
-    }
-
-    let unmount_handle = mount_to(document_element.unchecked_into(), move || {
-        presentation(state, current_slide, &stylesheet_urls).into_any()
-    });
-    *presentation_window = Some((new_presentation_window, unmount_handle));
+    *presentation_window = Some(new_presentation_window);
 }
 
 #[component]
