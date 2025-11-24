@@ -1,0 +1,11 @@
+{
+  "name": "Lyricweb",
+  "short_name": "Lyricweb",
+  "description": "Presentation software for hymn lyrics",
+  "background_color": "#ffffff",
+  "start_url": "/",
+  "id": "/",
+  "categories": ["productivity"],
+  "lang": "en",
+  "display": "standalone"
+}
