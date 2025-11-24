@@ -11,7 +11,7 @@ keywords = ["lyrics", "openlyrics", "webapp"]
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
 gloo-file = { version = "0.3.0", features = ["futures"] }
-leptos = { version = "0.8.12", features = ["csr"] }
+leptos = { version = "0.8.13", features = ["csr"] }
 leptos-use = "0.16.3"
 openlyrics = { version = "0.1.0", path = "../openlyrics" }
 quick-xml = { version = "0.38.4", features = ["serialize"] }
