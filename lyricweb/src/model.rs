@@ -257,6 +257,13 @@ mod tests {
             playlist: vec![],
         };
         assert_eq!(state.slides(), vec![]);
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 0,
+                page_index: 0
+            }),
+            None
+        );
     }
 
     #[test]
@@ -286,6 +293,34 @@ mod tests {
                     Slide::Text("bar")
                 )
             ]
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 0,
+                page_index: 0,
+            }),
+            Some(Slide::Text("foo"))
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 0,
+                page_index: 1,
+            }),
+            None
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 1,
+                page_index: 0,
+            }),
+            Some(Slide::Text("bar"))
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 2,
+                page_index: 0,
+            }),
+            None
         );
     }
 
@@ -368,6 +403,45 @@ mod tests {
                     }
                 ),
             ]
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 0,
+                page_index: 0,
+            }),
+            Some(Slide::SongStart { song_index: 0 })
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 0,
+                page_index: 1,
+            }),
+            Some(Slide::Lyrics {
+                song_index: 0,
+                lyric_entry_index: 0,
+                lines_index: 0,
+            })
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 0,
+                page_index: 4,
+            }),
+            None
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 1,
+                page_index: 0,
+            }),
+            None
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                entry_index: 1,
+                page_index: 1,
+            }),
+            None
         );
     }
 
