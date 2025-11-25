@@ -14,6 +14,7 @@ use leptos::{
 };
 use leptos_router::{
     components::{Route, Router, Routes},
+    hooks::query_signal,
     path,
 };
 use leptos_use::storage::use_local_storage;
@@ -41,12 +42,16 @@ fn App() -> impl IntoView {
     view! {
         <Router>
             <Routes fallback=|| "Not found">
-                <Route path=path!("/") view=move || view! {
-                    <Controller state write_state current_slide write_current_slide/>
-                }/>
-                <Route path=path!("/present") view=move || view! {
-                    <CurrentSlide state current_slide/>
-                }/>
+                <Route path=path!("/") view=move || if query_signal("present").0.get().unwrap_or_default() {
+                    view! {
+                        <CurrentSlide state current_slide/>
+                    }.into_any()
+                } else {
+                    view! {
+                        <Controller state write_state current_slide write_current_slide/>
+                    }.into_any()
+                }
+                />
             </Routes>
         </Router>
     }
@@ -95,7 +100,7 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
     }
 
     let new_presentation_window = window()
-        .open_with_url_and_target_and_features(&"/present", &"", &"popup=true")
+        .open_with_url_and_target_and_features(&"/?present=true", &"", &"popup=true")
         .unwrap()
         .unwrap();
 
