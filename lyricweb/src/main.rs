@@ -42,7 +42,7 @@ fn App() -> impl IntoView {
     view! {
         <Router>
             <Routes fallback=|| "Not found">
-                <Route path=path!("/") view=move || if query_signal("present").0.get().unwrap_or_default() {
+                <Route path=path!("*any") view=move || if query_signal("present").0.get().unwrap_or_default() {
                     view! {
                         <CurrentSlide state current_slide/>
                     }.into_any()
