@@ -120,9 +120,9 @@ fn SongList(
             <select size="10" node_ref=song_list>
                 {move || {
                     let state = state.read();
-                    state.songs.iter().map(|song| {
+                    state.songs.iter().map(|(id, song)| {
                         view! {
-                            <option>{title_for_song(&song).to_owned()}</option>
+                            <option value={id.to_string()}>{title_for_song(&song).to_owned()}</option>
                         }
                     }).collect::<Vec<_>>()
                 }}
@@ -152,17 +152,17 @@ fn Playlist(
                 let state = state.read();
                 state.slides().into_iter().map(|(slide_index, slide)| {
                     match slide {
-                        Slide::SongStart { song_index } => {
+                        Slide::SongStart { song_id } => {
                             view! {
-                                <option disabled value={slide_index.to_string()}>{ title_for_song(&state.songs[song_index]).to_owned() }</option>
+                                <option disabled value={slide_index.to_string()}>{ title_for_song(&state.songs[&song_id]).to_owned() }</option>
                             }.into_any()
                         }
                         Slide::Lyrics {
-                            song_index,
+                            song_id,
                             lyric_entry_index,
                             lines_index,
                         } => {
-                            let song = &state.songs[song_index];
+                            let song = &state.songs[&song_id];
                             let lyric_entry = &song.lyrics.lyrics[lyric_entry_index];
 
                             let first_line = if let LyricEntry::Verse { lines, .. } = lyric_entry {
@@ -258,11 +258,11 @@ fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<SlideIndex>>)
             match slide {
                 Slide::SongStart { .. } => None,
                 Slide::Lyrics {
-                    song_index,
+                    song_id,
                     lyric_entry_index,
                     lines_index,
                 } => {
-                    let song = &state.songs[*song_index];
+                    let song = &state.songs[song_id];
                     Some(song_page(song, *lyric_entry_index, *lines_index).into_any())
                 }
                 Slide::Text(text) => Some(text_page(text).into_any()),
@@ -279,15 +279,12 @@ fn add_song_to_playlist(
 ) {
     event.prevent_default();
 
-    let selected = song_list.selected_index();
-    write_output.set(Some(format!("selected: {selected}")));
-    if selected >= 0 {
-        write_state.update(|state| {
-            state.playlist.push(PlaylistEntry::Song {
-                song_index: selected.try_into().unwrap(),
-            })
-        });
-    }
+    let Ok(song_id) = song_list.value().parse() else {
+        return;
+    };
+
+    write_output.set(Some(format!("song_id: {song_id}")));
+    write_state.update(|state| state.playlist.push(PlaylistEntry::Song { song_id }));
 }
 
 fn add_text_to_playlist(
@@ -333,7 +330,7 @@ async fn open_file(
     match from_str(&text) {
         Ok(song) => {
             write_error.set(None);
-            write_state.update(|state| state.songs.push(song));
+            write_state.update(|state| state.add_song(song));
         }
         Err(e) => write_error.set(Some(e.to_string())),
     }

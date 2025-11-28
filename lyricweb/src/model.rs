@@ -5,6 +5,7 @@
 use openlyrics::types::{LyricEntry, Song};
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::BTreeMap,
     fmt::{self, Display, Formatter},
     num::ParseIntError,
     str::FromStr,
@@ -13,27 +14,44 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct State {
-    pub songs: Vec<Song>,
+    pub songs: BTreeMap<u32, Song>,
     pub playlist: Vec<PlaylistEntry>,
 }
 
 impl State {
     pub const fn new() -> Self {
         Self {
-            songs: Vec::new(),
+            songs: BTreeMap::new(),
             playlist: Vec::new(),
         }
+    }
+
+    pub fn add_song(&mut self, song: Song) {
+        // No point adding an exact duplicate.
+        if self
+            .songs
+            .values()
+            .any(|existing_song| existing_song == &song)
+        {
+            return;
+        }
+
+        let id = self
+            .songs
+            .iter()
+            .map(|(i, _)| i + 1)
+            .max()
+            .unwrap_or_default();
+        self.songs.insert(id, song);
     }
 
     pub fn slide(&self, index: SlideIndex) -> Option<Slide<'_>> {
         let entry = self.playlist.get(index.entry_index)?;
         match entry {
-            PlaylistEntry::Song { song_index } => {
-                let song = &self.songs[*song_index];
+            PlaylistEntry::Song { song_id } => {
+                let song = &self.songs[song_id];
                 if index.page_index == 0 {
-                    Some(Slide::SongStart {
-                        song_index: *song_index,
-                    })
+                    Some(Slide::SongStart { song_id: *song_id })
                 } else {
                     let mut index_left = index.page_index - 1;
                     for (lyric_entry_index, item) in song.lyrics.lyrics.iter().enumerate() {
@@ -41,7 +59,7 @@ impl State {
                             LyricEntry::Verse { lines, .. } => {
                                 if index_left < lines.len() {
                                     return Some(Slide::Lyrics {
-                                        song_index: *song_index,
+                                        song_id: *song_id,
                                         lyric_entry_index,
                                         lines_index: index_left,
                                     });
@@ -52,7 +70,7 @@ impl State {
                             LyricEntry::Instrument { .. } => {
                                 if index_left == 0 {
                                     return Some(Slide::Lyrics {
-                                        song_index: *song_index,
+                                        song_id: *song_id,
                                         lyric_entry_index,
                                         lines_index: 0,
                                     });
@@ -79,16 +97,14 @@ impl State {
         let mut slides = Vec::new();
         for (entry_index, entry) in self.playlist.iter().enumerate() {
             match entry {
-                PlaylistEntry::Song { song_index } => {
-                    let song = &self.songs[*song_index];
+                PlaylistEntry::Song { song_id } => {
+                    let song = &self.songs[song_id];
                     slides.push((
                         SlideIndex {
                             entry_index,
                             page_index: 0,
                         },
-                        Slide::SongStart {
-                            song_index: *song_index,
-                        },
+                        Slide::SongStart { song_id: *song_id },
                     ));
                     let mut page_index = 1;
                     for (lyric_entry_index, item) in song.lyrics.lyrics.iter().enumerate() {
@@ -101,7 +117,7 @@ impl State {
                                             page_index,
                                         },
                                         Slide::Lyrics {
-                                            song_index: *song_index,
+                                            song_id: *song_id,
                                             lyric_entry_index,
                                             lines_index,
                                         },
@@ -116,7 +132,7 @@ impl State {
                                         page_index,
                                     },
                                     Slide::Lyrics {
-                                        song_index: *song_index,
+                                        song_id: *song_id,
                                         lyric_entry_index,
                                         lines_index: 0,
                                     },
@@ -142,8 +158,8 @@ impl State {
     pub fn slide_index_for_index(&self, mut slide_index: usize) -> Option<SlideIndex> {
         for (i, entry) in self.playlist.iter().enumerate() {
             let entry_length = match entry {
-                PlaylistEntry::Song { song_index } => {
-                    let song = &self.songs[*song_index];
+                PlaylistEntry::Song { song_id } => {
+                    let song = &self.songs[song_id];
                     1 + song
                         .lyrics
                         .lyrics
@@ -188,10 +204,10 @@ impl State {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Slide<'a> {
     SongStart {
-        song_index: usize,
+        song_id: u32,
     },
     Lyrics {
-        song_index: usize,
+        song_id: u32,
         lyric_entry_index: usize,
         lines_index: usize,
     },
@@ -200,7 +216,7 @@ pub enum Slide<'a> {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum PlaylistEntry {
-    Song { song_index: usize },
+    Song { song_id: u32 },
     Text(String),
 }
 
@@ -253,7 +269,7 @@ mod tests {
     #[test]
     fn slides_empty() {
         let state = State {
-            songs: vec![],
+            songs: BTreeMap::new(),
             playlist: vec![],
         };
         assert_eq!(state.slides(), vec![]);
@@ -269,7 +285,7 @@ mod tests {
     #[test]
     fn slides_text() {
         let state = State {
-            songs: vec![],
+            songs: BTreeMap::new(),
             playlist: vec![
                 PlaylistEntry::Text("foo".to_string()),
                 PlaylistEntry::Text("bar".to_string()),
@@ -327,37 +343,42 @@ mod tests {
     #[test]
     fn slides_song() {
         let state = State {
-            songs: vec![Song {
-                properties: Properties::default(),
-                lyrics: Lyrics {
-                    lyrics: vec![
-                        LyricEntry::Verse {
-                            name: "v1".to_string(),
-                            lang: None,
-                            translit: None,
-                            lines: vec![
-                                Lines {
-                                    break_optional: None,
-                                    part: None,
-                                    repeat: None,
-                                    contents: vec![],
-                                },
-                                Lines {
-                                    break_optional: None,
-                                    part: None,
-                                    repeat: None,
-                                    contents: vec![],
-                                },
-                            ],
-                        },
-                        LyricEntry::Instrument {
-                            name: "i1".to_string(),
-                            lines: vec![],
-                        },
-                    ],
+            songs: [(
+                0,
+                Song {
+                    properties: Properties::default(),
+                    lyrics: Lyrics {
+                        lyrics: vec![
+                            LyricEntry::Verse {
+                                name: "v1".to_string(),
+                                lang: None,
+                                translit: None,
+                                lines: vec![
+                                    Lines {
+                                        break_optional: None,
+                                        part: None,
+                                        repeat: None,
+                                        contents: vec![],
+                                    },
+                                    Lines {
+                                        break_optional: None,
+                                        part: None,
+                                        repeat: None,
+                                        contents: vec![],
+                                    },
+                                ],
+                            },
+                            LyricEntry::Instrument {
+                                name: "i1".to_string(),
+                                lines: vec![],
+                            },
+                        ],
+                    },
                 },
-            }],
-            playlist: vec![PlaylistEntry::Song { song_index: 0 }],
+            )]
+            .into_iter()
+            .collect(),
+            playlist: vec![PlaylistEntry::Song { song_id: 0 }],
         };
         assert_eq!(
             state.slides(),
@@ -367,7 +388,7 @@ mod tests {
                         entry_index: 0,
                         page_index: 0,
                     },
-                    Slide::SongStart { song_index: 0 }
+                    Slide::SongStart { song_id: 0 }
                 ),
                 (
                     SlideIndex {
@@ -375,7 +396,7 @@ mod tests {
                         page_index: 1,
                     },
                     Slide::Lyrics {
-                        song_index: 0,
+                        song_id: 0,
                         lyric_entry_index: 0,
                         lines_index: 0,
                     }
@@ -386,7 +407,7 @@ mod tests {
                         page_index: 2,
                     },
                     Slide::Lyrics {
-                        song_index: 0,
+                        song_id: 0,
                         lyric_entry_index: 0,
                         lines_index: 1,
                     }
@@ -397,7 +418,7 @@ mod tests {
                         page_index: 3,
                     },
                     Slide::Lyrics {
-                        song_index: 0,
+                        song_id: 0,
                         lyric_entry_index: 1,
                         lines_index: 0,
                     }
@@ -409,7 +430,7 @@ mod tests {
                 entry_index: 0,
                 page_index: 0,
             }),
-            Some(Slide::SongStart { song_index: 0 })
+            Some(Slide::SongStart { song_id: 0 })
         );
         assert_eq!(
             state.slide(SlideIndex {
@@ -417,7 +438,7 @@ mod tests {
                 page_index: 1,
             }),
             Some(Slide::Lyrics {
-                song_index: 0,
+                song_id: 0,
                 lyric_entry_index: 0,
                 lines_index: 0,
             })
@@ -448,40 +469,45 @@ mod tests {
     #[test]
     fn find_entry() {
         let state = State {
-            songs: vec![Song {
-                properties: Properties::default(),
-                lyrics: Lyrics {
-                    lyrics: vec![
-                        LyricEntry::Verse {
-                            name: "v1".to_string(),
-                            lang: None,
-                            translit: None,
-                            lines: vec![
-                                Lines {
-                                    break_optional: None,
-                                    part: None,
-                                    repeat: None,
-                                    contents: vec![],
-                                },
-                                Lines {
-                                    break_optional: None,
-                                    part: None,
-                                    repeat: None,
-                                    contents: vec![],
-                                },
-                            ],
-                        },
-                        LyricEntry::Instrument {
-                            name: "i1".to_string(),
-                            lines: vec![],
-                        },
-                    ],
+            songs: [(
+                0,
+                Song {
+                    properties: Properties::default(),
+                    lyrics: Lyrics {
+                        lyrics: vec![
+                            LyricEntry::Verse {
+                                name: "v1".to_string(),
+                                lang: None,
+                                translit: None,
+                                lines: vec![
+                                    Lines {
+                                        break_optional: None,
+                                        part: None,
+                                        repeat: None,
+                                        contents: vec![],
+                                    },
+                                    Lines {
+                                        break_optional: None,
+                                        part: None,
+                                        repeat: None,
+                                        contents: vec![],
+                                    },
+                                ],
+                            },
+                            LyricEntry::Instrument {
+                                name: "i1".to_string(),
+                                lines: vec![],
+                            },
+                        ],
+                    },
                 },
-            }],
+            )]
+            .into_iter()
+            .collect(),
             playlist: vec![
-                PlaylistEntry::Song { song_index: 0 },
+                PlaylistEntry::Song { song_id: 0 },
                 PlaylistEntry::Text("Text".to_string()),
-                PlaylistEntry::Song { song_index: 0 },
+                PlaylistEntry::Song { song_id: 0 },
             ],
         };
 
