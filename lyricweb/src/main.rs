@@ -73,6 +73,8 @@ fn Controller(
     let presentation_window = RefCell::new(None);
 
     view! {
+        <div id="controller">
+        <div>
         <h1>"Lyricweb"</h1>
         <form>
         <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
@@ -84,11 +86,17 @@ fn Controller(
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
+        </div>
+        <div>
         <Playlist state write_state current_slide write_current_slide/>
+        </div>
+        <div>
         <form>
         <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
         </form>
         <CurrentSlide state current_slide/>
+        </div>
+        </div>
     }
 }
 
@@ -117,7 +125,7 @@ fn SongList(
 
     view! {
         <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
-            <select size="10" node_ref=song_list>
+            <select size="10" id="song_list" node_ref=song_list>
                 {move || {
                     let state = state.read();
                     state.songs_by_title().into_iter().map(|(id, song)| {
@@ -126,7 +134,7 @@ fn SongList(
                         }
                     }).collect::<Vec<_>>()
                 }}
-            </select>
+            </select><br/>
             <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
             <input type="submit" value="Add to playlist" />
         </form>
@@ -141,8 +149,9 @@ fn Playlist(
     write_current_slide: WriteSignal<Option<SlideIndex>>,
 ) -> impl IntoView {
     view! {
+        <h2>"Playlist"</h2>
         <form>
-        <select size="20"
+        <select size="20" id="playlist"
             on:change:target=move |event| {
                 if let Ok(slide_index) = event.target().value().parse() {
                     write_current_slide.set(Some(slide_index));
@@ -194,7 +203,7 @@ fn Playlist(
                     }
                 }).collect::<Vec<_>>()
             }}
-        </select>
+        </select><br/>
         <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
         <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
         <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>

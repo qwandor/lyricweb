@@ -6,3 +6,28 @@
   background: #eef;
   border: 1px solid #ddf;
 }
+
+body {
+  margin: 0px;
+}
+
+#controller {
+  display: flex;
+  margin: 8px;
+  gap: 8px;
+}
+
+body > div {
+  flex: 1;
+}
+
+#song_list,
+#playlist {
+  width: 100%;
+}
+
+h1,
+h2 {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
