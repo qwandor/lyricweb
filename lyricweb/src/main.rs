@@ -127,6 +127,7 @@ fn SongList(
                     }).collect::<Vec<_>>()
                 }}
             </select>
+            <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
             <input type="submit" value="Add to playlist" />
         </form>
     }
@@ -269,6 +270,17 @@ fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<SlideIndex>>)
             }
         } }
     }
+}
+
+/// Removes the selected song from the song database.
+fn remove_from_song_list(song_list: HtmlSelectElement, write_state: WriteSignal<State>) {
+    let Ok(song_id) = song_list.value().parse() else {
+        return;
+    };
+
+    write_state.update(|state| {
+        state.remove_song(song_id);
+    })
 }
 
 fn add_song_to_playlist(

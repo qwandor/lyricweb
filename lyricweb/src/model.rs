@@ -45,6 +45,18 @@ impl State {
         self.songs.insert(id, song);
     }
 
+    /// Remove the song with the given ID from the database, and replace any playlist entries
+    /// referring to it with a text entry.
+    pub fn remove_song(&mut self, id: u32) {
+        for entry in &mut self.playlist {
+            if matches!(entry, PlaylistEntry::Song { song_id } if *song_id == id) {
+                *entry = PlaylistEntry::Text("Song removed".to_string());
+            }
+        }
+
+        self.songs.remove(&id);
+    }
+
     pub fn slide(&self, index: SlideIndex) -> Option<Slide<'_>> {
         let entry = self.playlist.get(index.entry_index)?;
         match entry {
