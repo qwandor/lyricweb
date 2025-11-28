@@ -108,7 +108,7 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
     }
 
     let new_presentation_window = window()
-        .open_with_url_and_target_and_features(&"/?present=true", &"", &"popup=true")
+        .open_with_url_and_target_and_features(&"?present=true", &"", &"popup=true")
         .unwrap()
         .unwrap();
 
