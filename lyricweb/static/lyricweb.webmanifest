@@ -7,5 +7,21 @@
   "id": "/",
   "categories": ["productivity"],
   "lang": "en",
-  "display": "standalone"
+  "display": "standalone",
+  "shortcuts": [
+    { "name": "Controller", "url": "/" },
+    { "name": "Presentation", "url": "/?present=true" }
+  ],
+  "icons": [
+    { "src": "icon.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192" }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot.png",
+      "type": "image/png",
+      "sizes": "1536x943",
+      "form_factor": "wide"
+    }
+  ]
 }
