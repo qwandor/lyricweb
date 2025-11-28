@@ -26,6 +26,13 @@ impl State {
         }
     }
 
+    /// Returns a list of all songs, sorted by title.
+    pub fn songs_by_title(&self) -> Vec<(&u32, &Song)> {
+        let mut songs = self.songs.iter().collect::<Vec<_>>();
+        songs.sort_by_key(|(_, song)| title_for_song(song));
+        songs
+    }
+
     pub fn add_song(&mut self, song: Song) {
         // No point adding an exact duplicate.
         if self

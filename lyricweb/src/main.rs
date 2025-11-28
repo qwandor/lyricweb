@@ -120,7 +120,7 @@ fn SongList(
             <select size="10" node_ref=song_list>
                 {move || {
                     let state = state.read();
-                    state.songs.iter().map(|(id, song)| {
+                    state.songs_by_title().into_iter().map(|(id, song)| {
                         view! {
                             <option value={id.to_string()}>{title_for_song(&song).to_owned()}</option>
                         }
