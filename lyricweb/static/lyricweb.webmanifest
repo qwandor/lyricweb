@@ -9,8 +9,8 @@
   "lang": "en",
   "display": "standalone",
   "shortcuts": [
-    { "name": "Controller", "url": "/" },
-    { "name": "Presentation", "url": "/?present=true" }
+    { "name": "Controller", "url": ".." },
+    { "name": "Presentation", "url": "../?present=true" }
   ],
   "icons": [
     { "src": "icon.png", "type": "image/png", "sizes": "512x512" },
