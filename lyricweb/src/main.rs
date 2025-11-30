@@ -79,8 +79,10 @@ fn Controller(
         <form>
         <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
         </form>
+        <div>
         <p id="output">{ output }</p>
         <p id="error">{ error }</p>
+        </div>
         <SongList state write_state write_output/>
         <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), write_state)>
         <input type="text" node_ref=text_entry />
@@ -126,8 +128,8 @@ fn SongList(
     let song_list = NodeRef::new();
 
     view! {
-        <form on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
-            <select size="10" id="song_list" node_ref=song_list>
+        <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
+            <select size="10" id="song-list" node_ref=song_list>
                 {move || {
                     let state = state.read();
                     state.songs_by_title().into_iter().map(|(id, song)| {
@@ -136,9 +138,11 @@ fn SongList(
                         }
                     }).collect::<Vec<_>>()
                 }}
-            </select><br/>
+            </select>
+            <div class="button-row">
             <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
             <input type="submit" value="Add to playlist" />
+            </div>
         </form>
     }
 }
@@ -152,7 +156,7 @@ fn Playlist(
 ) -> impl IntoView {
     view! {
         <h2>"Playlist"</h2>
-        <form>
+        <form class="tall">
         <select size="20" id="playlist"
             on:change:target=move |event| {
                 if let Ok(slide_index) = event.target().value().parse() {
@@ -205,10 +209,12 @@ fn Playlist(
                     }
                 }).collect::<Vec<_>>()
             }}
-        </select><br/>
+        </select>
+        <div class="button-row">
         <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
         <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
         <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
+        </div>
         </form>
     }
 }

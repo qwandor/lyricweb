@@ -26,7 +26,26 @@ body {
   overflow: scroll;
 }
 
-#song_list,
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+form.tall {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.button-row {
+  display: flex;
+}
+
+select {
+  flex: 1;
+}
+
+#song-list,
 #playlist {
   width: 100%;
   height: auto;
