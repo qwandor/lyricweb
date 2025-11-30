@@ -129,7 +129,7 @@ fn SongList(
 
     view! {
         <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
-            <select size="10" id="song-list" node_ref=song_list>
+            <select size="5" id="song-list" node_ref=song_list>
                 {move || {
                     let state = state.read();
                     state.songs_by_title().into_iter().map(|(id, song)| {
@@ -157,7 +157,7 @@ fn Playlist(
     view! {
         <h2>"Playlist"</h2>
         <form class="tall">
-        <select size="20" id="playlist"
+        <select size="5" id="playlist"
             on:change:target=move |event| {
                 if let Ok(slide_index) = event.target().value().parse() {
                     write_current_slide.set(Some(slide_index));
