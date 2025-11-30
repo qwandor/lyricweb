@@ -74,7 +74,7 @@ fn Controller(
 
     view! {
         <div id="controller">
-        <div>
+        <div class="column">
         <h1>"Lyricweb"</h1>
         <form>
         <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
@@ -87,14 +87,16 @@ fn Controller(
         <input type="submit" value="Add to playlist" />
         </form>
         </div>
-        <div>
+        <div class="column">
         <Playlist state write_state current_slide write_current_slide/>
         </div>
-        <div>
+        <div class="column">
         <form>
         <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
         </form>
+        <div class="preview">
         <CurrentSlide state current_slide/>
+        </div>
         </div>
         </div>
     }
@@ -262,6 +264,7 @@ fn move_in_playlist(
 #[component]
 fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<SlideIndex>>) -> impl IntoView {
     view! {
+        <div class="slide">
         { move || {
             let state = state.read();
             let slide = &state.slide(current_slide.get()?)?;
@@ -278,6 +281,7 @@ fn CurrentSlide(state: Signal<State>, current_slide: Signal<Option<SlideIndex>>)
                 Slide::Text(text) => Some(text_page(text).into_any()),
             }
         } }
+        </div>
     }
 }
 
