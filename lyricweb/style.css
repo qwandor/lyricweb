@@ -64,6 +64,20 @@ select {
   overflow: hidden;
   box-sizing: border-box;
   display: flow-root;
+  contain: strict;
+  container-type: size;
+}
+
+.slide h1 {
+  font-size: 4cqi;
+}
+
+.slide h2 {
+  font-size: 3cqi;
+}
+
+.slide p {
+  font-size: 2cqi;
 }
 
 h1,
