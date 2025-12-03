@@ -173,36 +173,6 @@ impl State {
         slides
     }
 
-    /// Returns the `SlideIndex` for the given overall slide index.
-    pub fn slide_index_for_index(&self, mut slide_index: usize) -> Option<SlideIndex> {
-        for (i, entry) in self.playlist.iter().enumerate() {
-            let entry_length = match entry {
-                PlaylistEntry::Song { song_id } => {
-                    let song = &self.songs[song_id];
-                    1 + song
-                        .lyrics
-                        .lyrics
-                        .iter()
-                        .map(|item| match item {
-                            LyricEntry::Verse { lines, .. } => lines.len(),
-                            LyricEntry::Instrument { .. } => 1,
-                        })
-                        .sum::<usize>()
-                }
-                PlaylistEntry::Text(_) => 1,
-            };
-            if slide_index < entry_length {
-                return Some(SlideIndex {
-                    entry_index: i,
-                    page_index: slide_index,
-                });
-            } else {
-                slide_index -= entry_length;
-            }
-        }
-        None
-    }
-
     /// Moves the playlist entry containing the slide at the given index up or down by the given
     /// offset.
     ///
@@ -482,95 +452,6 @@ mod tests {
                 page_index: 1,
             }),
             None
-        );
-    }
-
-    #[test]
-    fn find_entry() {
-        let state = State {
-            songs: [(
-                0,
-                Song {
-                    properties: Properties::default(),
-                    lyrics: Lyrics {
-                        lyrics: vec![
-                            LyricEntry::Verse {
-                                name: "v1".to_string(),
-                                lang: None,
-                                translit: None,
-                                lines: vec![
-                                    Lines {
-                                        break_optional: None,
-                                        part: None,
-                                        repeat: None,
-                                        contents: vec![],
-                                    },
-                                    Lines {
-                                        break_optional: None,
-                                        part: None,
-                                        repeat: None,
-                                        contents: vec![],
-                                    },
-                                ],
-                            },
-                            LyricEntry::Instrument {
-                                name: "i1".to_string(),
-                                lines: vec![],
-                            },
-                        ],
-                    },
-                },
-            )]
-            .into_iter()
-            .collect(),
-            playlist: vec![
-                PlaylistEntry::Song { song_id: 0 },
-                PlaylistEntry::Text("Text".to_string()),
-                PlaylistEntry::Song { song_id: 0 },
-            ],
-        };
-
-        assert_eq!(
-            state.slide_index_for_index(0),
-            Some(SlideIndex {
-                entry_index: 0,
-                page_index: 0,
-            })
-        );
-        assert_eq!(
-            state.slide_index_for_index(1),
-            Some(SlideIndex {
-                entry_index: 0,
-                page_index: 1,
-            })
-        );
-        assert_eq!(
-            state.slide_index_for_index(2),
-            Some(SlideIndex {
-                entry_index: 0,
-                page_index: 2,
-            })
-        );
-        assert_eq!(
-            state.slide_index_for_index(3),
-            Some(SlideIndex {
-                entry_index: 0,
-                page_index: 3,
-            })
-        );
-        assert_eq!(
-            state.slide_index_for_index(4),
-            Some(SlideIndex {
-                entry_index: 1,
-                page_index: 0,
-            })
-        );
-        assert_eq!(
-            state.slide_index_for_index(5),
-            Some(SlideIndex {
-                entry_index: 2,
-                page_index: 0,
-            })
         );
     }
 }
