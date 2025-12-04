@@ -2,18 +2,21 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+mod files;
 mod model;
 mod playlist;
 mod slide;
 mod songlist;
 
 use crate::{
+    files::{SaveFileType, pick_save_file, write_and_close},
     model::{PlaylistEntry, SlideIndex, State},
     playlist::Playlist,
     slide::CurrentSlide,
     songlist::SongList,
 };
 use gloo_file::{File, FileList, futures::read_as_text};
+use gloo_utils::format::JsValueSerdeExt;
 use leptos::{
     ev::Targeted,
     prelude::*,
@@ -28,7 +31,8 @@ use leptos_router::{
 use leptos_use::storage::use_local_storage;
 use quick_xml::de::from_str;
 use std::cell::RefCell;
-use web_sys::{Event, HtmlInputElement, SubmitEvent, Window};
+use wasm_bindgen::JsValue;
+use web_sys::{Event, HtmlInputElement, SaveFilePickerOptions, SubmitEvent, Window};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -90,9 +94,14 @@ fn Controller(
         <div id="controller">
             <div class="column">
                 <h1>"Lyricweb"</h1>
-                <form>
-                    <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
-                </form>
+                <div class="button-row">
+                    <form>
+                        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
+                    </form>
+                    <form on:submit=move |event| spawn_local(export(event, state, write_error)) >
+                        <input type="submit" value="Export" />
+                    </form>
+                </div>
                 <div>
                     <p id="output">{ output }</p>
                     <p id="error">{ error }</p>
@@ -157,6 +166,38 @@ fn add_text_to_playlist(
             .push(PlaylistEntry::Text(text))
     });
     text_entry.set_value("");
+}
+
+/// Exports the state to a file.
+async fn export(
+    event: SubmitEvent,
+    state: Signal<State>,
+    write_error: WriteSignal<Option<String>>,
+) {
+    event.prevent_default();
+
+    let options = SaveFilePickerOptions::new();
+    options.set_id("export");
+    options.set_suggested_name(Some("lyricweb.json"));
+    let types = JsValue::from_serde(&[SaveFileType {
+        description: Some("JSON file".to_string()),
+        accept: [("application/json".to_string(), vec![".json".to_string()])]
+            .into_iter()
+            .collect(),
+    }])
+    .unwrap();
+    options.set_types(&types);
+
+    let Ok(file) = pick_save_file(&options).await else {
+        return;
+    };
+
+    let state = state.read_untracked();
+    if let Err(e) = write_and_close(&file, &serde_json::to_string::<State>(&state).unwrap()).await {
+        write_error.set(Some(format!("{e:?}")));
+    } else {
+        write_error.set(None);
+    }
 }
 
 async fn file_changed(
