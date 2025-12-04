@@ -23,7 +23,7 @@ body {
 
 #controller .column {
   flex: 1;
-  overflow: scroll;
+  overflow: auto;
 }
 
 .column {
