@@ -98,10 +98,12 @@ fn Controller(
         <p id="error">{ error }</p>
         </div>
         <SongList state write_state current_playlist write_output/>
+        <div class="button-row">
         <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" disabled=no_current_playlist />
         </form>
+        </div>
         </div>
         <div class="column">
         <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>

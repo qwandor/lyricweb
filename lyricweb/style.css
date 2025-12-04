@@ -40,6 +40,16 @@ form.tall {
 .button-row {
   display: flex;
 }
+.button-row form {
+  display: flex;
+  flex: 2;
+}
+.button-row select {
+  flex: 1;
+}
+.button-row input[type="text"] {
+  flex: 2;
+}
 
 select[size] {
   flex: 1;
