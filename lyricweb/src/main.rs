@@ -71,6 +71,12 @@ fn Controller(
         use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_playlist");
     let no_current_playlist = move || current_playlist.get().is_none();
 
+    if current_playlist.get_untracked().is_none()
+        && let Some((&playlist_id, _)) = state.get_untracked().playlists.first_key_value()
+    {
+        write_current_playlist.set(Some(playlist_id));
+    }
+
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
 
