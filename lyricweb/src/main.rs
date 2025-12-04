@@ -88,34 +88,34 @@ fn Controller(
 
     view! {
         <div id="controller">
-        <div class="column">
-        <h1>"Lyricweb"</h1>
-        <form>
-        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
-        </form>
-        <div>
-        <p id="output">{ output }</p>
-        <p id="error">{ error }</p>
-        </div>
-        <SongList state write_state current_playlist write_output/>
-        <div class="button-row">
-        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
-        <input type="text" node_ref=text_entry />
-        <input type="submit" value="Add to playlist" disabled=no_current_playlist />
-        </form>
-        </div>
-        </div>
-        <div class="column">
-        <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
-        </div>
-        <div class="column">
-        <form>
-        <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
-        </form>
-        <div class="preview">
-        <CurrentSlide state current_slide/>
-        </div>
-        </div>
+            <div class="column">
+                <h1>"Lyricweb"</h1>
+                <form>
+                    <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
+                </form>
+                <div>
+                    <p id="output">{ output }</p>
+                    <p id="error">{ error }</p>
+                </div>
+                <SongList state write_state current_playlist write_output/>
+                <div class="button-row">
+                    <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
+                        <input type="text" node_ref=text_entry />
+                        <input type="submit" value="Add to playlist" disabled=no_current_playlist />
+                    </form>
+                </div>
+            </div>
+            <div class="column">
+                <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
+            </div>
+            <div class="column">
+                <form>
+                    <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                </form>
+                <div class="preview">
+                    <CurrentSlide state current_slide/>
+                </div>
+            </div>
         </div>
     }
 }

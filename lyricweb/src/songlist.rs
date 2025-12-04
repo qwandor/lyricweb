@@ -30,8 +30,8 @@ pub fn SongList(
                 }}
             </select>
             <div class="button-row">
-            <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
-            <input type="submit" value="Add to playlist" disabled=no_current_playlist />
+                <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
+                <input type="submit" value="Add to playlist" disabled=no_current_playlist />
             </div>
         </form>
     }

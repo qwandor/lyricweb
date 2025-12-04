@@ -25,27 +25,27 @@ pub fn Playlist(
     view! {
         <h2>{move || Some(state.get().playlists.get(&current_playlist.get()?)?.name.clone())}</h2>
         <div class="button-row">
-        <select on:change:target=move |event| if let Ok(playlist_id) = event.target().value().parse() {
-            // TODO: What should this do about the current slide?
-            write_current_playlist.set(Some(playlist_id));
-        }
-        prop:value=move || current_playlist.get().map(|playlist_id| playlist_id.to_string())>
-        {move || {
-            let state = state.read();
-            state.playlists.iter().map(|(playlist_id, playlist)| {
-                view! {
-                    <option value={playlist_id.to_string()}>{playlist.name.clone()}</option>
-                }
-            }).collect::<Vec<_>>()
-        }}
-        </select>
-        <input type="button" value="New" on:click=move |_| new_playlist(write_state, write_current_playlist)/>
-        <input type="button" value="Delete" disabled=no_current_playlist on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
-        <form on:submit=move |event| rename_playlist(event, playlist_name.get().unwrap(), current_playlist, write_state)>
-        <input type="text" node_ref=playlist_name minlength="1" size="10"
-            prop:value=move || current_playlist.get().map(|playlist_id| state.get().playlists.get(&playlist_id).unwrap().name.clone()) />
-        <input type="submit" value="Rename" disabled=no_current_playlist />
-        </form>
+            <select on:change:target=move |event| if let Ok(playlist_id) = event.target().value().parse() {
+                // TODO: What should this do about the current slide?
+                write_current_playlist.set(Some(playlist_id));
+            }
+            prop:value=move || current_playlist.get().map(|playlist_id| playlist_id.to_string())>
+            {move || {
+                let state = state.read();
+                state.playlists.iter().map(|(playlist_id, playlist)| {
+                    view! {
+                        <option value={playlist_id.to_string()}>{playlist.name.clone()}</option>
+                    }
+                }).collect::<Vec<_>>()
+            }}
+            </select>
+            <input type="button" value="New" on:click=move |_| new_playlist(write_state, write_current_playlist)/>
+            <input type="button" value="Delete" disabled=no_current_playlist on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
+            <form on:submit=move |event| rename_playlist(event, playlist_name.get().unwrap(), current_playlist, write_state)>
+                <input type="text" node_ref=playlist_name minlength="1" size="10"
+                    prop:value=move || current_playlist.get().map(|playlist_id| state.get().playlists.get(&playlist_id).unwrap().name.clone()) />
+                <input type="submit" value="Rename" disabled=no_current_playlist />
+            </form>
         </div>
         <form class="tall">
         <select size="5" id="playlist" disabled=no_current_playlist
@@ -105,9 +105,9 @@ pub fn Playlist(
             }}
         </select>
         <div class="button-row">
-        <input type="button" value="Remove" disabled=no_current_slide on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
-        <input type="button" value="Move up" disabled=no_current_slide on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
-        <input type="button" value="Move down" disabled=no_current_slide on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
+            <input type="button" value="Remove" disabled=no_current_slide on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
+            <input type="button" value="Move up" disabled=no_current_slide on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
+            <input type="button" value="Move down" disabled=no_current_slide on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
         </div>
         </form>
     }
