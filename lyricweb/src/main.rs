@@ -67,6 +67,9 @@ fn Controller(
 ) -> impl IntoView {
     let text_entry = NodeRef::new();
 
+    let (current_playlist, write_current_playlist, _) =
+        use_local_storage::<_, FromToStringCodec>("current_playlist");
+
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
 
@@ -83,14 +86,14 @@ fn Controller(
         <p id="output">{ output }</p>
         <p id="error">{ error }</p>
         </div>
-        <SongList state write_state write_output/>
-        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), write_state)>
+        <SongList state write_state current_playlist write_output/>
+        <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
         <input type="text" node_ref=text_entry />
         <input type="submit" value="Add to playlist" />
         </form>
         </div>
         <div class="column">
-        <Playlist state write_state current_slide write_current_slide/>
+        <Playlist state write_state current_playlist current_slide write_current_slide/>
         </div>
         <div class="column">
         <form>
@@ -123,12 +126,13 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
 fn SongList(
     state: Signal<State>,
     write_state: WriteSignal<State>,
+    current_playlist: Signal<u32>,
     write_output: WriteSignal<Option<String>>,
 ) -> impl IntoView {
     let song_list = NodeRef::new();
 
     view! {
-        <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), write_state, write_output)>
+        <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state, write_output)>
             <select size="5" id="song-list" node_ref=song_list>
                 {move || {
                     let state = state.read();
@@ -151,11 +155,12 @@ fn SongList(
 fn Playlist(
     state: Signal<State>,
     write_state: WriteSignal<State>,
+    current_playlist: Signal<u32>,
     current_slide: Signal<Option<SlideIndex>>,
     write_current_slide: WriteSignal<Option<SlideIndex>>,
 ) -> impl IntoView {
     view! {
-        <h2>"Playlist"</h2>
+        <h2>{move || state.get().playlists.get(&current_playlist.get()).unwrap().name.clone()}</h2>
         <form class="tall">
         <select size="5" id="playlist"
             on:change:target=move |event| {
@@ -166,7 +171,7 @@ fn Playlist(
             prop:value=move || current_slide.get().map(|index| index.to_string()).unwrap_or_default()>
             {move ||{
                 let state = state.read();
-                state.slides().into_iter().map(|(slide_index, slide)| {
+                state.slides(current_playlist.get()).into_iter().map(|(slide_index, slide)| {
                     match slide {
                         Slide::SongStart { song_id } => {
                             view! {
@@ -227,14 +232,15 @@ fn remove_from_playlist(
 ) {
     if let Some(mut current_slide) = current_slide.get() {
         write_state.update(|state| {
-            state.playlist.remove(current_slide.entry_index);
+            let playlist = state.playlists.get_mut(&current_slide.playlist_id).unwrap();
+            playlist.entries.remove(current_slide.entry_index);
 
-            if state.playlist.is_empty() {
+            if playlist.entries.is_empty() {
                 write_current_slide.set(None);
             } else {
                 // Ensure that current_slide is still within range.
                 current_slide.page_index = 0;
-                if current_slide.entry_index >= state.playlist.len() {
+                if current_slide.entry_index >= playlist.entries.len() {
                     current_slide.entry_index -= 1;
                 }
                 write_current_slide.set(Some(current_slide));
@@ -252,8 +258,13 @@ fn move_in_playlist(
 ) {
     if let Some(current_slide) = current_slide.get() {
         let mut moved = false;
-        write_state
-            .update(|state| moved = state.move_entry_index(current_slide.entry_index, offset));
+        write_state.update(|state| {
+            moved = state
+                .playlists
+                .get_mut(&current_slide.playlist_id)
+                .unwrap()
+                .move_entry_index(current_slide.entry_index, offset)
+        });
         if moved {
             write_current_slide.update(|current_slide| {
                 if let Some(current_slide) = current_slide {
@@ -305,6 +316,7 @@ fn remove_from_song_list(song_list: HtmlSelectElement, write_state: WriteSignal<
 fn add_song_to_playlist(
     event: SubmitEvent,
     song_list: HtmlSelectElement,
+    current_playlist: Signal<u32>,
     write_state: WriteSignal<State>,
     write_output: WriteSignal<Option<String>>,
 ) {
@@ -315,18 +327,33 @@ fn add_song_to_playlist(
     };
 
     write_output.set(Some(format!("song_id: {song_id}")));
-    write_state.update(|state| state.playlist.push(PlaylistEntry::Song { song_id }));
+    write_state.update(|state| {
+        state
+            .playlists
+            .get_mut(&current_playlist.get())
+            .unwrap()
+            .entries
+            .push(PlaylistEntry::Song { song_id })
+    });
 }
 
 fn add_text_to_playlist(
     event: SubmitEvent,
     text_entry: HtmlInputElement,
+    current_playlist: Signal<u32>,
     write_state: WriteSignal<State>,
 ) {
     event.prevent_default();
 
     let text = text_entry.value();
-    write_state.update(|state| state.playlist.push(PlaylistEntry::Text(text)));
+    write_state.update(|state| {
+        state
+            .playlists
+            .get_mut(&current_playlist.get())
+            .unwrap()
+            .entries
+            .push(PlaylistEntry::Text(text))
+    });
 }
 
 async fn file_changed(

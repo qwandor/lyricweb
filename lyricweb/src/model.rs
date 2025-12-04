@@ -12,20 +12,30 @@ use std::{
 };
 use thiserror::Error;
 
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct State {
     pub songs: BTreeMap<u32, Song>,
-    pub playlist: Vec<PlaylistEntry>,
+    pub playlists: BTreeMap<u32, Playlist>,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            songs: Default::default(),
+            playlists: [(
+                0,
+                Playlist {
+                    name: "Playlist".to_string(),
+                    entries: Default::default(),
+                },
+            )]
+            .into_iter()
+            .collect(),
+        }
+    }
 }
 
 impl State {
-    pub const fn new() -> Self {
-        Self {
-            songs: BTreeMap::new(),
-            playlist: Vec::new(),
-        }
-    }
-
     /// Returns a list of all songs, sorted by title.
     pub fn songs_by_title(&self) -> Vec<(&u32, &Song)> {
         let mut songs = self.songs.iter().collect::<Vec<_>>();
@@ -55,9 +65,11 @@ impl State {
     /// Remove the song with the given ID from the database, and replace any playlist entries
     /// referring to it with a text entry.
     pub fn remove_song(&mut self, id: u32) {
-        for entry in &mut self.playlist {
-            if matches!(entry, PlaylistEntry::Song { song_id } if *song_id == id) {
-                *entry = PlaylistEntry::Text("Song removed".to_string());
+        for playlist in self.playlists.values_mut() {
+            for entry in &mut playlist.entries {
+                if matches!(entry, PlaylistEntry::Song { song_id } if *song_id == id) {
+                    *entry = PlaylistEntry::Text("Song removed".to_string());
+                }
             }
         }
 
@@ -65,7 +77,11 @@ impl State {
     }
 
     pub fn slide(&self, index: SlideIndex) -> Option<Slide<'_>> {
-        let entry = self.playlist.get(index.entry_index)?;
+        let entry = self
+            .playlists
+            .get(&index.playlist_id)?
+            .entries
+            .get(index.entry_index)?;
         match entry {
             PlaylistEntry::Song { song_id } => {
                 let song = &self.songs[song_id];
@@ -112,14 +128,18 @@ impl State {
         }
     }
 
-    pub fn slides(&self) -> Vec<(SlideIndex, Slide<'_>)> {
+    pub fn slides(&self, playlist_id: u32) -> Vec<(SlideIndex, Slide<'_>)> {
+        let Some(playlist) = self.playlists.get(&playlist_id) else {
+            return vec![];
+        };
         let mut slides = Vec::new();
-        for (entry_index, entry) in self.playlist.iter().enumerate() {
+        for (entry_index, entry) in playlist.entries.iter().enumerate() {
             match entry {
                 PlaylistEntry::Song { song_id } => {
                     let song = &self.songs[song_id];
                     slides.push((
                         SlideIndex {
+                            playlist_id,
                             entry_index,
                             page_index: 0,
                         },
@@ -132,6 +152,7 @@ impl State {
                                 for lines_index in 0..lines.len() {
                                     slides.push((
                                         SlideIndex {
+                                            playlist_id,
                                             entry_index,
                                             page_index,
                                         },
@@ -147,6 +168,7 @@ impl State {
                             LyricEntry::Instrument { .. } => {
                                 slides.push((
                                     SlideIndex {
+                                        playlist_id,
                                         entry_index,
                                         page_index,
                                     },
@@ -163,6 +185,7 @@ impl State {
                 }
                 PlaylistEntry::Text(text) => slides.push((
                     SlideIndex {
+                        playlist_id,
                         entry_index,
                         page_index: 0,
                     },
@@ -172,7 +195,15 @@ impl State {
         }
         slides
     }
+}
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Playlist {
+    pub name: String,
+    pub entries: Vec<PlaylistEntry>,
+}
+
+impl Playlist {
     /// Moves the playlist entry containing the slide at the given index up or down by the given
     /// offset.
     ///
@@ -180,9 +211,9 @@ impl State {
     /// slide was out of range.
     pub fn move_entry_index(&mut self, entry_index: usize, offset: isize) -> bool {
         if let Some(new_index) = entry_index.checked_add_signed(offset)
-            && new_index < self.playlist.len()
+            && new_index < self.entries.len()
         {
-            self.playlist.swap(entry_index, new_index);
+            self.entries.swap(entry_index, new_index);
             true
         } else {
             false
@@ -216,6 +247,8 @@ pub fn title_for_song(song: &Song) -> &str {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SlideIndex {
+    /// The ID of the playlist containing the slide.
+    pub playlist_id: u32,
     /// The index of the song or text entry within the playlist.
     pub entry_index: usize,
     /// The index of the page within the entry.
@@ -224,7 +257,11 @@ pub struct SlideIndex {
 
 impl Display for SlideIndex {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{},{}", self.entry_index, self.page_index)
+        write!(
+            f,
+            "{},{},{}",
+            self.playlist_id, self.entry_index, self.page_index
+        )
     }
 }
 
@@ -232,10 +269,12 @@ impl FromStr for SlideIndex {
     type Err = ParseSlideIndexError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (entry_index, page_index) = s
-            .split_once(',')
-            .ok_or(ParseSlideIndexError::MissingComma)?;
+        let parts = s.split(',').collect::<Vec<_>>();
+        let [playlist_id, entry_index, page_index] = parts.as_slice() else {
+            return Err(ParseSlideIndexError::WrongNumberOfParts);
+        };
         Ok(Self {
+            playlist_id: playlist_id.parse()?,
             entry_index: entry_index.parse()?,
             page_index: page_index.parse()?,
         })
@@ -244,8 +283,8 @@ impl FromStr for SlideIndex {
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum ParseSlideIndexError {
-    #[error("Missing comma")]
-    MissingComma,
+    #[error("Wrong number of parts")]
+    WrongNumberOfParts,
     #[error("{0}")]
     ParseInt(#[from] ParseIntError),
 }
@@ -257,13 +296,11 @@ mod tests {
 
     #[test]
     fn slides_empty() {
-        let state = State {
-            songs: BTreeMap::new(),
-            playlist: vec![],
-        };
-        assert_eq!(state.slides(), vec![]);
+        let state = State::default();
+        assert_eq!(state.slides(0), vec![]);
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 0,
                 entry_index: 0,
                 page_index: 0
             }),
@@ -275,16 +312,25 @@ mod tests {
     fn slides_text() {
         let state = State {
             songs: BTreeMap::new(),
-            playlist: vec![
-                PlaylistEntry::Text("foo".to_string()),
-                PlaylistEntry::Text("bar".to_string()),
-            ],
+            playlists: [(
+                42,
+                Playlist {
+                    name: "Playlist".to_string(),
+                    entries: vec![
+                        PlaylistEntry::Text("foo".to_string()),
+                        PlaylistEntry::Text("bar".to_string()),
+                    ],
+                },
+            )]
+            .into_iter()
+            .collect(),
         };
         assert_eq!(
-            state.slides(),
+            state.slides(42),
             vec![
                 (
                     SlideIndex {
+                        playlist_id: 42,
                         entry_index: 0,
                         page_index: 0,
                     },
@@ -292,6 +338,7 @@ mod tests {
                 ),
                 (
                     SlideIndex {
+                        playlist_id: 42,
                         entry_index: 1,
                         page_index: 0,
                     },
@@ -301,6 +348,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 0,
                 page_index: 0,
             }),
@@ -308,6 +356,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 0,
                 page_index: 1,
             }),
@@ -315,6 +364,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 1,
                 page_index: 0,
             }),
@@ -322,6 +372,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 2,
                 page_index: 0,
             }),
@@ -367,13 +418,22 @@ mod tests {
             )]
             .into_iter()
             .collect(),
-            playlist: vec![PlaylistEntry::Song { song_id: 0 }],
+            playlists: [(
+                42,
+                Playlist {
+                    name: "Playlist".to_string(),
+                    entries: vec![PlaylistEntry::Song { song_id: 0 }],
+                },
+            )]
+            .into_iter()
+            .collect(),
         };
         assert_eq!(
-            state.slides(),
+            state.slides(42),
             vec![
                 (
                     SlideIndex {
+                        playlist_id: 42,
                         entry_index: 0,
                         page_index: 0,
                     },
@@ -381,6 +441,7 @@ mod tests {
                 ),
                 (
                     SlideIndex {
+                        playlist_id: 42,
                         entry_index: 0,
                         page_index: 1,
                     },
@@ -392,6 +453,7 @@ mod tests {
                 ),
                 (
                     SlideIndex {
+                        playlist_id: 42,
                         entry_index: 0,
                         page_index: 2,
                     },
@@ -403,6 +465,7 @@ mod tests {
                 ),
                 (
                     SlideIndex {
+                        playlist_id: 42,
                         entry_index: 0,
                         page_index: 3,
                     },
@@ -416,6 +479,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 0,
                 page_index: 0,
             }),
@@ -423,6 +487,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 0,
                 page_index: 1,
             }),
@@ -434,6 +499,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 0,
                 page_index: 4,
             }),
@@ -441,6 +507,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 1,
                 page_index: 0,
             }),
@@ -448,6 +515,7 @@ mod tests {
         );
         assert_eq!(
             state.slide(SlideIndex {
+                playlist_id: 42,
                 entry_index: 1,
                 page_index: 1,
             }),
