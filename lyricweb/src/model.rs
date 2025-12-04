@@ -22,15 +22,7 @@ impl Default for State {
     fn default() -> Self {
         Self {
             songs: Default::default(),
-            playlists: [(
-                0,
-                Playlist {
-                    name: "Playlist".to_string(),
-                    entries: Default::default(),
-                },
-            )]
-            .into_iter()
-            .collect(),
+            playlists: [(0, Playlist::new("Playlist"))].into_iter().collect(),
         }
     }
 }
@@ -60,6 +52,17 @@ impl State {
             .max()
             .unwrap_or_default();
         self.songs.insert(id, song);
+    }
+
+    pub fn add_playlist(&mut self, name: &str) -> u32 {
+        let id = self
+            .playlists
+            .iter()
+            .map(|(i, _)| i + 1)
+            .max()
+            .unwrap_or_default();
+        self.playlists.insert(id, Playlist::new(name));
+        id
     }
 
     /// Remove the song with the given ID from the database, and replace any playlist entries
@@ -204,6 +207,13 @@ pub struct Playlist {
 }
 
 impl Playlist {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            entries: Vec::new(),
+        }
+    }
+
     /// Moves the playlist entry containing the slide at the given index up or down by the given
     /// offset.
     ///

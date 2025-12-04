@@ -41,7 +41,7 @@ form.tall {
   display: flex;
 }
 
-select {
+select[size] {
   flex: 1;
 }
 

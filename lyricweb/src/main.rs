@@ -68,7 +68,7 @@ fn Controller(
     let text_entry = NodeRef::new();
 
     let (current_playlist, write_current_playlist, _) =
-        use_local_storage::<_, FromToStringCodec>("current_playlist");
+        use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_playlist");
 
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
@@ -93,7 +93,7 @@ fn Controller(
         </form>
         </div>
         <div class="column">
-        <Playlist state write_state current_playlist current_slide write_current_slide/>
+        <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
         </div>
         <div class="column">
         <form>
@@ -126,7 +126,7 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
 fn SongList(
     state: Signal<State>,
     write_state: WriteSignal<State>,
-    current_playlist: Signal<u32>,
+    current_playlist: Signal<Option<u32>>,
     write_output: WriteSignal<Option<String>>,
 ) -> impl IntoView {
     let song_list = NodeRef::new();
@@ -155,23 +155,45 @@ fn SongList(
 fn Playlist(
     state: Signal<State>,
     write_state: WriteSignal<State>,
-    current_playlist: Signal<u32>,
+    current_playlist: Signal<Option<u32>>,
+    write_current_playlist: WriteSignal<Option<u32>>,
     current_slide: Signal<Option<SlideIndex>>,
     write_current_slide: WriteSignal<Option<SlideIndex>>,
 ) -> impl IntoView {
     view! {
-        <h2>{move || state.get().playlists.get(&current_playlist.get()).unwrap().name.clone()}</h2>
+        <h2>{move || Some(state.get().playlists.get(&current_playlist.get()?)?.name.clone())}</h2>
         <form class="tall">
+        <div class="button-row">
+        <select on:change:target=move |event| if let Ok(playlist_id) = event.target().value().parse() {
+            // TODO: What should this do about the current slide?
+            write_current_playlist.set(Some(playlist_id));
+        }
+        prop:value=move || current_playlist.get().map(|playlist_id| playlist_id.to_string())>
+        {move || {
+            let state = state.read();
+            state.playlists.iter().map(|(playlist_id, playlist)| {
+                view! {
+                    <option value={playlist_id.to_string()}>{playlist.name.clone()}</option>
+                }
+            }).collect::<Vec<_>>()
+        }}
+        </select>
+        <input type="button" value="New" on:click=move |_| new_playlist(write_state, write_current_playlist)/>
+        <input type="button" value="Delete" on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
+        </div>
         <select size="5" id="playlist"
             on:change:target=move |event| {
                 if let Ok(slide_index) = event.target().value().parse() {
                     write_current_slide.set(Some(slide_index));
                 }
             }
-            prop:value=move || current_slide.get().map(|index| index.to_string()).unwrap_or_default()>
-            {move ||{
+            prop:value=move || current_slide.get().map(|index| index.to_string())>
+            {move || {
                 let state = state.read();
-                state.slides(current_playlist.get()).into_iter().map(|(slide_index, slide)| {
+                let Some(current_playlist) = current_playlist.get() else {
+                    return Vec::new();
+                };
+                state.slides(current_playlist).into_iter().map(|(slide_index, slide)| {
                     match slide {
                         Slide::SongStart { song_id } => {
                             view! {
@@ -222,6 +244,35 @@ fn Playlist(
         </div>
         </form>
     }
+}
+
+/// Creates a new playlist and switches to it.
+fn new_playlist(write_state: WriteSignal<State>, write_current_playlist: WriteSignal<Option<u32>>) {
+    let mut new_playlist_id = 0;
+    write_state.update(|state| new_playlist_id = state.add_playlist("New"));
+    write_current_playlist.set(Some(new_playlist_id));
+}
+
+/// Deletes the current playlist.
+fn delete_playlist(
+    write_state: WriteSignal<State>,
+    current_playlist: Signal<Option<u32>>,
+    write_current_playlist: WriteSignal<Option<u32>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+) {
+    let Some(playlist_id) = current_playlist.get() else {
+        return;
+    };
+
+    write_current_slide.set(None);
+    write_state.update(|state| {
+        state.playlists.remove(&playlist_id);
+        if let Some((&first_id, _)) = state.playlists.first_key_value() {
+            write_current_playlist.set(Some(first_id));
+        } else {
+            write_current_playlist.set(None);
+        }
+    });
 }
 
 /// Removes the current slide's entry from the playlist.
@@ -316,7 +367,7 @@ fn remove_from_song_list(song_list: HtmlSelectElement, write_state: WriteSignal<
 fn add_song_to_playlist(
     event: SubmitEvent,
     song_list: HtmlSelectElement,
-    current_playlist: Signal<u32>,
+    current_playlist: Signal<Option<u32>>,
     write_state: WriteSignal<State>,
     write_output: WriteSignal<Option<String>>,
 ) {
@@ -325,12 +376,15 @@ fn add_song_to_playlist(
     let Ok(song_id) = song_list.value().parse() else {
         return;
     };
+    let Some(current_playlist) = current_playlist.get() else {
+        return;
+    };
 
     write_output.set(Some(format!("song_id: {song_id}")));
     write_state.update(|state| {
         state
             .playlists
-            .get_mut(&current_playlist.get())
+            .get_mut(&current_playlist)
             .unwrap()
             .entries
             .push(PlaylistEntry::Song { song_id })
@@ -340,16 +394,20 @@ fn add_song_to_playlist(
 fn add_text_to_playlist(
     event: SubmitEvent,
     text_entry: HtmlInputElement,
-    current_playlist: Signal<u32>,
+    current_playlist: Signal<Option<u32>>,
     write_state: WriteSignal<State>,
 ) {
     event.prevent_default();
+
+    let Some(current_playlist) = current_playlist.get() else {
+        return;
+    };
 
     let text = text_entry.value();
     write_state.update(|state| {
         state
             .playlists
-            .get_mut(&current_playlist.get())
+            .get_mut(&current_playlist)
             .unwrap()
             .entries
             .push(PlaylistEntry::Text(text))
