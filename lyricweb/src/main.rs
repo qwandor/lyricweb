@@ -69,6 +69,7 @@ fn Controller(
 
     let (current_playlist, write_current_playlist, _) =
         use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_playlist");
+    let no_current_playlist = move || current_playlist.get().is_none();
 
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
@@ -89,7 +90,7 @@ fn Controller(
         <SongList state write_state current_playlist write_output/>
         <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
         <input type="text" node_ref=text_entry />
-        <input type="submit" value="Add to playlist" />
+        <input type="submit" value="Add to playlist" disabled=no_current_playlist />
         </form>
         </div>
         <div class="column">
@@ -130,6 +131,7 @@ fn SongList(
     write_output: WriteSignal<Option<String>>,
 ) -> impl IntoView {
     let song_list = NodeRef::new();
+    let no_current_playlist = move || current_playlist.get().is_none();
 
     view! {
         <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state, write_output)>
@@ -145,7 +147,7 @@ fn SongList(
             </select>
             <div class="button-row">
             <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
-            <input type="submit" value="Add to playlist" />
+            <input type="submit" value="Add to playlist" disabled=no_current_playlist />
             </div>
         </form>
     }
@@ -160,6 +162,9 @@ fn Playlist(
     current_slide: Signal<Option<SlideIndex>>,
     write_current_slide: WriteSignal<Option<SlideIndex>>,
 ) -> impl IntoView {
+    let no_current_playlist = move || current_playlist.get().is_none();
+    let no_current_slide = move || current_slide.get().is_none();
+
     view! {
         <h2>{move || Some(state.get().playlists.get(&current_playlist.get()?)?.name.clone())}</h2>
         <form class="tall">
@@ -179,9 +184,9 @@ fn Playlist(
         }}
         </select>
         <input type="button" value="New" on:click=move |_| new_playlist(write_state, write_current_playlist)/>
-        <input type="button" value="Delete" on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
+        <input type="button" value="Delete" disabled=no_current_playlist on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
         </div>
-        <select size="5" id="playlist"
+        <select size="5" id="playlist" disabled=no_current_playlist
             on:change:target=move |event| {
                 if let Ok(slide_index) = event.target().value().parse() {
                     write_current_slide.set(Some(slide_index));
@@ -238,9 +243,9 @@ fn Playlist(
             }}
         </select>
         <div class="button-row">
-        <input type="button" value="Remove" on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
-        <input type="button" value="Move up" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
-        <input type="button" value="Move down" on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
+        <input type="button" value="Remove" disabled=no_current_slide on:click=move |_| remove_from_playlist(write_state, current_slide, write_current_slide)/>
+        <input type="button" value="Move up" disabled=no_current_slide on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, -1)/>
+        <input type="button" value="Move down" disabled=no_current_slide on:click=move |_| move_in_playlist(write_state, current_slide, write_current_slide, 1)/>
         </div>
         </form>
     }
