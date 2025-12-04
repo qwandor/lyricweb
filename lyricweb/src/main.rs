@@ -154,6 +154,7 @@ fn add_text_to_playlist(
             .entries
             .push(PlaylistEntry::Text(text))
     });
+    text_entry.set_value("");
 }
 
 async fn file_changed(
