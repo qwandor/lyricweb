@@ -106,7 +106,7 @@ fn Controller(
                     <p id="output">{ output }</p>
                     <p id="error">{ error }</p>
                 </div>
-                <SongList state write_state current_playlist write_output/>
+                <SongList state write_state current_playlist />
                 <div class="button-row">
                     <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
                         <input type="text" node_ref=text_entry />

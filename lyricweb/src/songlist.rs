@@ -12,13 +12,12 @@ pub fn SongList(
     state: Signal<State>,
     write_state: WriteSignal<State>,
     current_playlist: Signal<Option<u32>>,
-    write_output: WriteSignal<Option<String>>,
 ) -> impl IntoView {
     let song_list = NodeRef::new();
     let no_current_playlist = move || current_playlist.get().is_none();
 
     view! {
-        <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state, write_output)>
+        <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state)>
             <select size="5" id="song-list" node_ref=song_list>
                 {move || {
                     let state = state.read();
@@ -53,7 +52,6 @@ fn add_song_to_playlist(
     song_list: HtmlSelectElement,
     current_playlist: Signal<Option<u32>>,
     write_state: WriteSignal<State>,
-    write_output: WriteSignal<Option<String>>,
 ) {
     event.prevent_default();
 
@@ -64,7 +62,6 @@ fn add_song_to_playlist(
         return;
     };
 
-    write_output.set(Some(format!("song_id: {song_id}")));
     write_state.update(|state| {
         state
             .playlists
