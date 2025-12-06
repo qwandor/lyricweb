@@ -70,7 +70,7 @@ pub async fn import_url(
     if let Err(e) = try_import_url(url, write_state).await {
         write_error.set(Some(e));
     } else {
-        navigate("/", Default::default());
+        navigate(".", Default::default());
     }
 }
 
