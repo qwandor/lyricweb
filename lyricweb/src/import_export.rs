@@ -12,7 +12,9 @@ use gloo_utils::format::JsValueSerdeExt;
 use leptos::prelude::*;
 use leptos_router::NavigateOptions;
 use wasm_bindgen::JsValue;
-use web_sys::{OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent};
+use web_sys::{
+    FileSystemWritableFileStream, OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent,
+};
 
 /// Exports the state to a file.
 pub async fn export(
@@ -39,12 +41,20 @@ pub async fn export(
         return;
     };
 
+    write_error.set(export_to_file(state, file).await.err());
+}
+
+async fn export_to_file(
+    state: Signal<State>,
+    file: FileSystemWritableFileStream,
+) -> Result<(), String> {
     let state = state.read_untracked();
-    if let Err(e) = write_and_close(&file, &serde_json::to_string::<State>(&state).unwrap()).await {
-        write_error.set(Some(format!("{e:?}")));
-    } else {
-        write_error.set(None);
-    }
+    write_and_close(
+        &file,
+        &serde_json::to_string::<State>(&state).map_err(|e| e.to_string())?,
+    )
+    .await
+    .map_err(|e| format!("{e:?}"))
 }
 
 /// Imports a single song or the entire state from a URL, and then redirect to the main page.
