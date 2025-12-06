@@ -100,28 +100,65 @@ impl State {
                     Some(Slide::SongStart { song_id: *song_id })
                 } else {
                     let mut index_left = index.page_index - 1;
-                    for (lyric_entry_index, item) in song.lyrics.lyrics.iter().enumerate() {
-                        match item {
-                            LyricEntry::Verse { lines, .. } => {
-                                if index_left < lines.len() {
-                                    return Some(Slide::Lyrics {
-                                        song_id: *song_id,
-                                        lyric_entry_index,
-                                        lines_index: index_left,
-                                    });
-                                } else {
-                                    index_left -= lines.len();
+                    if let Some(verse_order) = &song.properties.verse_order {
+                        for verse in verse_order.split(' ') {
+                            if let Some((lyric_entry_index, lyric_entry)) = song
+                                .lyrics
+                                .lyrics
+                                .iter()
+                                .enumerate()
+                                .find(|(_, lyric_entry)| lyric_entry.name() == verse)
+                            {
+                                match lyric_entry {
+                                    LyricEntry::Verse { lines, .. } => {
+                                        if index_left < lines.len() {
+                                            return Some(Slide::Lyrics {
+                                                song_id: *song_id,
+                                                lyric_entry_index,
+                                                lines_index: index_left,
+                                            });
+                                        } else {
+                                            index_left -= lines.len();
+                                        }
+                                    }
+                                    LyricEntry::Instrument { .. } => {
+                                        if index_left == 0 {
+                                            return Some(Slide::Lyrics {
+                                                song_id: *song_id,
+                                                lyric_entry_index,
+                                                lines_index: 0,
+                                            });
+                                        } else {
+                                            index_left -= 1;
+                                        }
+                                    }
                                 }
                             }
-                            LyricEntry::Instrument { .. } => {
-                                if index_left == 0 {
-                                    return Some(Slide::Lyrics {
-                                        song_id: *song_id,
-                                        lyric_entry_index,
-                                        lines_index: 0,
-                                    });
-                                } else {
-                                    index_left -= 1;
+                        }
+                    } else {
+                        for (lyric_entry_index, item) in song.lyrics.lyrics.iter().enumerate() {
+                            match item {
+                                LyricEntry::Verse { lines, .. } => {
+                                    if index_left < lines.len() {
+                                        return Some(Slide::Lyrics {
+                                            song_id: *song_id,
+                                            lyric_entry_index,
+                                            lines_index: index_left,
+                                        });
+                                    } else {
+                                        index_left -= lines.len();
+                                    }
+                                }
+                                LyricEntry::Instrument { .. } => {
+                                    if index_left == 0 {
+                                        return Some(Slide::Lyrics {
+                                            song_id: *song_id,
+                                            lyric_entry_index,
+                                            lines_index: 0,
+                                        });
+                                    } else {
+                                        index_left -= 1;
+                                    }
                                 }
                             }
                         }
@@ -157,40 +194,39 @@ impl State {
                         Slide::SongStart { song_id: *song_id },
                     ));
                     let mut page_index = 1;
-                    for (lyric_entry_index, item) in song.lyrics.lyrics.iter().enumerate() {
-                        match item {
-                            LyricEntry::Verse { lines, .. } => {
-                                for lines_index in 0..lines.len() {
-                                    slides.push((
-                                        SlideIndex {
-                                            playlist_id,
-                                            entry_index,
-                                            page_index,
-                                        },
-                                        Slide::Lyrics {
-                                            song_id: *song_id,
-                                            lyric_entry_index,
-                                            lines_index,
-                                        },
-                                    ));
-                                    page_index += 1;
-                                }
+                    if let Some(verse_order) = &song.properties.verse_order {
+                        for verse in verse_order.split(' ') {
+                            if let Some((lyric_entry_index, lyric_entry)) = song
+                                .lyrics
+                                .lyrics
+                                .iter()
+                                .enumerate()
+                                .find(|(_, lyric_entry)| lyric_entry.name() == verse)
+                            {
+                                push_lyric_entry_pages(
+                                    lyric_entry_index,
+                                    lyric_entry,
+                                    playlist_id,
+                                    entry_index,
+                                    *song_id,
+                                    &mut slides,
+                                    &mut page_index,
+                                );
                             }
-                            LyricEntry::Instrument { .. } => {
-                                slides.push((
-                                    SlideIndex {
-                                        playlist_id,
-                                        entry_index,
-                                        page_index,
-                                    },
-                                    Slide::Lyrics {
-                                        song_id: *song_id,
-                                        lyric_entry_index,
-                                        lines_index: 0,
-                                    },
-                                ));
-                                page_index += 1;
-                            }
+                        }
+                    } else {
+                        for (lyric_entry_index, lyric_entry) in
+                            song.lyrics.lyrics.iter().enumerate()
+                        {
+                            push_lyric_entry_pages(
+                                lyric_entry_index,
+                                lyric_entry,
+                                playlist_id,
+                                entry_index,
+                                *song_id,
+                                &mut slides,
+                                &mut page_index,
+                            );
                         }
                     }
                 }
@@ -235,6 +271,51 @@ impl State {
             {
                 self.add_playlist(playlist);
             }
+        }
+    }
+}
+
+fn push_lyric_entry_pages(
+    lyric_entry_index: usize,
+    lyric_entry: &LyricEntry,
+    playlist_id: u32,
+    entry_index: usize,
+    song_id: u32,
+    slides: &mut Vec<(SlideIndex, Slide)>,
+    page_index: &mut usize,
+) {
+    match lyric_entry {
+        LyricEntry::Verse { lines, .. } => {
+            for lines_index in 0..lines.len() {
+                slides.push((
+                    SlideIndex {
+                        playlist_id,
+                        entry_index,
+                        page_index: *page_index,
+                    },
+                    Slide::Lyrics {
+                        song_id,
+                        lyric_entry_index,
+                        lines_index,
+                    },
+                ));
+                *page_index += 1;
+            }
+        }
+        LyricEntry::Instrument { .. } => {
+            slides.push((
+                SlideIndex {
+                    playlist_id,
+                    entry_index,
+                    page_index: *page_index,
+                },
+                Slide::Lyrics {
+                    song_id,
+                    lyric_entry_index,
+                    lines_index: 0,
+                },
+            ));
+            *page_index += 1;
         }
     }
 }
@@ -581,6 +662,177 @@ mod tests {
                 page_index: 1,
             }),
             None
+        );
+    }
+
+    #[test]
+    fn slides_verse_order() {
+        let state = State {
+            songs: [(
+                0,
+                Song {
+                    properties: Properties {
+                        verse_order: Some("v1 c v2 c v3 c".to_string()),
+                        ..Default::default()
+                    },
+                    lyrics: Lyrics {
+                        lyrics: vec![
+                            LyricEntry::Verse {
+                                name: "v1".to_string(),
+                                lang: None,
+                                translit: None,
+                                lines: vec![Lines {
+                                    break_optional: None,
+                                    part: None,
+                                    repeat: None,
+                                    contents: vec![],
+                                }],
+                            },
+                            LyricEntry::Verse {
+                                name: "c".to_string(),
+                                lang: None,
+                                translit: None,
+                                lines: vec![Lines {
+                                    break_optional: None,
+                                    part: None,
+                                    repeat: None,
+                                    contents: vec![],
+                                }],
+                            },
+                            LyricEntry::Verse {
+                                name: "v2".to_string(),
+                                lang: None,
+                                translit: None,
+                                lines: vec![Lines {
+                                    break_optional: None,
+                                    part: None,
+                                    repeat: None,
+                                    contents: vec![],
+                                }],
+                            },
+                            LyricEntry::Verse {
+                                name: "v3".to_string(),
+                                lang: None,
+                                translit: None,
+                                lines: vec![Lines {
+                                    break_optional: None,
+                                    part: None,
+                                    repeat: None,
+                                    contents: vec![],
+                                }],
+                            },
+                        ],
+                    },
+                },
+            )]
+            .into_iter()
+            .collect(),
+            playlists: [(
+                42,
+                Playlist {
+                    name: "Playlist".to_string(),
+                    entries: vec![PlaylistEntry::Song { song_id: 0 }],
+                },
+            )]
+            .into_iter()
+            .collect(),
+        };
+        assert_eq!(
+            state.slides(42),
+            vec![
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 0,
+                    },
+                    Slide::SongStart { song_id: 0 }
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 1,
+                    },
+                    Slide::Lyrics {
+                        song_id: 0,
+                        lyric_entry_index: 0,
+                        lines_index: 0,
+                    }
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 2,
+                    },
+                    Slide::Lyrics {
+                        song_id: 0,
+                        lyric_entry_index: 1,
+                        lines_index: 0,
+                    }
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 3,
+                    },
+                    Slide::Lyrics {
+                        song_id: 0,
+                        lyric_entry_index: 2,
+                        lines_index: 0,
+                    }
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 4,
+                    },
+                    Slide::Lyrics {
+                        song_id: 0,
+                        lyric_entry_index: 1,
+                        lines_index: 0,
+                    }
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 5,
+                    },
+                    Slide::Lyrics {
+                        song_id: 0,
+                        lyric_entry_index: 3,
+                        lines_index: 0,
+                    }
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 42,
+                        entry_index: 0,
+                        page_index: 6,
+                    },
+                    Slide::Lyrics {
+                        song_id: 0,
+                        lyric_entry_index: 1,
+                        lines_index: 0,
+                    }
+                ),
+            ]
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                playlist_id: 42,
+                entry_index: 0,
+                page_index: 4,
+            }),
+            Some(Slide::Lyrics {
+                song_id: 0,
+                lyric_entry_index: 1,
+                lines_index: 0,
+            })
         );
     }
 }
