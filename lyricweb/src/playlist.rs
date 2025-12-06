@@ -41,7 +41,7 @@ pub fn Playlist(
             </select>
             <input type="button" value="New" on:click=move |_| new_playlist(write_state, write_current_playlist)/>
             <input type="button" value="Delete" disabled=no_current_playlist on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
-            <form on:submit=move |event| rename_playlist(event, playlist_name.get().unwrap(), current_playlist, write_state)>
+            <form class="wide" on:submit=move |event| rename_playlist(event, playlist_name.get().unwrap(), current_playlist, write_state)>
                 <input type="text" node_ref=playlist_name minlength="1" size="10"
                     prop:value=move || current_playlist.get().map(|playlist_id| state.get().playlists.get(&playlist_id).unwrap().name.clone()).unwrap_or_default() />
                 <input type="submit" value="Rename" disabled=no_current_playlist />

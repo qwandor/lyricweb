@@ -4,18 +4,36 @@
 
 //! Utilities for working with files.
 
+use gloo_file::File;
 use leptos::tachys::dom::window;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{FileSystemFileHandle, FileSystemWritableFileStream, SaveFilePickerOptions};
+use web_sys::{
+    FileSystemFileHandle, FileSystemWritableFileStream, OpenFilePickerOptions,
+    SaveFilePickerOptions, js_sys::Array,
+};
 
-/// Type for the `types` entries of [`SaveFilePickerOptions`].
+/// Type for the `types` entries of [`OpenFilePickerOptions`] and [`SaveFilePickerOptions`].
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
-pub struct SaveFileType {
+pub struct FileType {
     pub description: Option<String>,
     pub accept: BTreeMap<String, Vec<String>>,
+}
+
+/// Prompts the user to pick a file to open.
+pub async fn pick_open_file(options: &OpenFilePickerOptions) -> Result<File, JsValue> {
+    let file_handles = JsFuture::from(window().show_open_file_picker_with_options(options)?)
+        .await?
+        .unchecked_into::<Array>()
+        .iter()
+        .map(JsValue::unchecked_into::<FileSystemFileHandle>)
+        .collect::<Vec<_>>();
+    Ok(JsFuture::from(file_handles.first().unwrap().get_file())
+        .await?
+        .unchecked_into::<web_sys::File>()
+        .into())
 }
 
 /// Prompts the user to pick a file to save to.

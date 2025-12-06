@@ -40,7 +40,7 @@ form.tall {
 .button-row {
   display: flex;
 }
-.button-row form {
+.button-row form.wide {
   display: flex;
   flex: 2;
 }

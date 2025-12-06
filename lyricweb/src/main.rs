@@ -9,16 +9,15 @@ mod slide;
 mod songlist;
 
 use crate::{
-    files::{SaveFileType, pick_save_file, write_and_close},
+    files::{FileType, pick_open_file, pick_save_file, write_and_close},
     model::{PlaylistEntry, SlideIndex, State},
     playlist::Playlist,
     slide::CurrentSlide,
     songlist::SongList,
 };
-use gloo_file::{File, FileList, futures::read_as_text};
+use gloo_file::{File, futures::read_as_text};
 use gloo_utils::format::JsValueSerdeExt;
 use leptos::{
-    ev::Targeted,
     prelude::*,
     server::codee::string::{FromToStringCodec, JsonSerdeCodec, OptionCodec},
     task::spawn_local,
@@ -32,7 +31,9 @@ use leptos_use::storage::use_local_storage;
 use quick_xml::de::from_str;
 use std::cell::RefCell;
 use wasm_bindgen::JsValue;
-use web_sys::{Event, HtmlInputElement, SaveFilePickerOptions, SubmitEvent, Window};
+use web_sys::{
+    HtmlInputElement, OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent, Window,
+};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -95,8 +96,8 @@ fn Controller(
             <div class="column">
                 <h1>"Lyricweb"</h1>
                 <div class="button-row">
-                    <form>
-                        <input type="file" on:change:target=move |event| spawn_local(file_changed(event, write_state, write_output, write_error)) />
+                    <form on:submit=move |event| spawn_local(import(event, write_state, write_output, write_error)) >
+                        <input type="submit" value="Import" />
                     </form>
                     <form on:submit=move |event| spawn_local(export(event, state, write_error)) >
                         <input type="submit" value="Export" />
@@ -108,7 +109,7 @@ fn Controller(
                 </div>
                 <SongList state write_state current_playlist />
                 <div class="button-row">
-                    <form on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
+                    <form class="wide" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
                         <input type="text" node_ref=text_entry />
                         <input type="submit" value="Add to playlist" disabled=no_current_playlist />
                     </form>
@@ -179,14 +180,15 @@ async fn export(
     let options = SaveFilePickerOptions::new();
     options.set_id("export");
     options.set_suggested_name(Some("lyricweb.json"));
-    let types = JsValue::from_serde(&[SaveFileType {
-        description: Some("JSON file".to_string()),
-        accept: [("application/json".to_string(), vec![".json".to_string()])]
-            .into_iter()
-            .collect(),
-    }])
-    .unwrap();
-    options.set_types(&types);
+    options.set_types(
+        &JsValue::from_serde(&[FileType {
+            description: Some("JSON file".to_string()),
+            accept: [("application/json".to_string(), vec![".json".to_string()])]
+                .into_iter()
+                .collect(),
+        }])
+        .unwrap(),
+    );
 
     let Ok(file) = pick_save_file(&options).await else {
         return;
@@ -200,24 +202,44 @@ async fn export(
     }
 }
 
-async fn file_changed(
-    event: Targeted<Event, HtmlInputElement>,
+/// Imports a single song or the entire state from a file.
+async fn import(
+    event: SubmitEvent,
     write_state: WriteSignal<State>,
     write_output: WriteSignal<Option<String>>,
     write_error: WriteSignal<Option<String>>,
 ) {
-    let files = FileList::from(event.target().files().unwrap());
-    open_file(
-        files.first().unwrap(),
-        write_state,
-        write_output,
-        write_error,
-    )
-    .await;
+    event.prevent_default();
+
+    let options = OpenFilePickerOptions::new();
+    options.set_id("import");
+    options.set_types(
+        &JsValue::from_serde(&[
+            FileType {
+                description: Some("JSON file".to_string()),
+                accept: [("application/json".to_string(), vec![".json".to_string()])]
+                    .into_iter()
+                    .collect(),
+            },
+            FileType {
+                description: Some("XML file".to_string()),
+                accept: [("text/xml".to_string(), vec![".xml".to_string()])]
+                    .into_iter()
+                    .collect(),
+            },
+        ])
+        .unwrap(),
+    );
+
+    let Ok(file) = pick_open_file(&options).await else {
+        return;
+    };
+
+    import_file(file, write_state, write_output, write_error).await;
 }
 
-async fn open_file(
-    file: &File,
+async fn import_file(
+    file: File,
     write_state: WriteSignal<State>,
     write_output: WriteSignal<Option<String>>,
     write_error: WriteSignal<Option<String>>,
