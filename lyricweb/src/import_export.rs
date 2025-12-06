@@ -59,6 +59,15 @@ pub async fn import(
     options.set_types(
         &JsValue::from_serde(&[
             FileType {
+                description: Some("JSON or XML file".to_string()),
+                accept: [
+                    ("application/json".to_string(), vec![".json".to_string()]),
+                    ("text/xml".to_string(), vec![".xml".to_string()]),
+                ]
+                .into_iter()
+                .collect(),
+            },
+            FileType {
                 description: Some("JSON file".to_string()),
                 accept: [("application/json".to_string(), vec![".json".to_string()])]
                     .into_iter()
