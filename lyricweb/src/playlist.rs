@@ -23,7 +23,6 @@ pub fn Playlist(
     let playlist_name = NodeRef::new();
 
     view! {
-        <h2>{move || Some(state.get().playlists.get(&current_playlist.get()?)?.name.clone())}</h2>
         <div class="button-row">
             <select on:change:target=move |event| if let Ok(playlist_id) = event.target().value().parse() {
                 // TODO: What should this do about the current slide?
