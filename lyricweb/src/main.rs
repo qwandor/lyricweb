@@ -229,11 +229,20 @@ async fn open_file(
         file.raw_mime_type()
     )));
     let text = read_as_text(&file).await.unwrap();
-    match from_str(&text) {
-        Ok(song) => {
-            write_error.set(None);
-            write_state.update(|state| state.add_song(song));
+    if file.name().ends_with(".json") {
+        match serde_json::from_str(&text) {
+            Ok(imported_state) => write_state.update(|state| state.merge(&imported_state)),
+            Err(e) => write_error.set(Some(e.to_string())),
         }
-        Err(e) => write_error.set(Some(e.to_string())),
+    } else {
+        match from_str(&text) {
+            Ok(song) => {
+                write_error.set(None);
+                write_state.update(|state| {
+                    state.add_song(song);
+                });
+            }
+            Err(e) => write_error.set(Some(e.to_string())),
+        }
     }
 }

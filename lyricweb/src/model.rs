@@ -35,14 +35,18 @@ impl State {
         songs
     }
 
-    pub fn add_song(&mut self, song: Song) {
+    /// Adds the given song to the database, and returns its ID.
+    ///
+    /// If the song already exists then the ID of the existing copy is returned without adding a
+    /// duplicate.
+    pub fn add_song(&mut self, song: Song) -> u32 {
         // No point adding an exact duplicate.
-        if self
+        if let Some((&existing_id, _)) = self
             .songs
-            .values()
-            .any(|existing_song| existing_song == &song)
+            .iter()
+            .find(|&(_, existing_song)| existing_song == &song)
         {
-            return;
+            return existing_id;
         }
 
         let id = self
@@ -52,16 +56,17 @@ impl State {
             .max()
             .unwrap_or_default();
         self.songs.insert(id, song);
+        id
     }
 
-    pub fn add_playlist(&mut self, name: &str) -> u32 {
+    pub fn add_playlist(&mut self, playlist: Playlist) -> u32 {
         let id = self
             .playlists
             .iter()
             .map(|(i, _)| i + 1)
             .max()
             .unwrap_or_default();
-        self.playlists.insert(id, Playlist::new(name));
+        self.playlists.insert(id, playlist);
         id
     }
 
@@ -197,6 +202,37 @@ impl State {
             }
         }
         slides
+    }
+
+    /// Merges the contents of the other state into this one.
+    pub fn merge(&mut self, other: &State) {
+        let mut other_song_ids_to_ours = BTreeMap::new();
+        for (id, song) in &other.songs {
+            other_song_ids_to_ours.insert(id, self.add_song(song.clone()));
+        }
+
+        for playlist in other.playlists.values() {
+            let mut playlist = playlist.clone();
+            // Update song IDs.
+            for entry in &mut playlist.entries {
+                if let PlaylistEntry::Song { song_id } = entry {
+                    if let Some(&our_song_id) = other_song_ids_to_ours.get(song_id) {
+                        *song_id = our_song_id;
+                    } else {
+                        *entry = PlaylistEntry::Text(format!("Invalid song ID {song_id}"));
+                    }
+                }
+            }
+
+            // Add it if we don't already have the exact same playlist.
+            if !self
+                .playlists
+                .values()
+                .any(|existing_playlist| existing_playlist == &playlist)
+            {
+                self.add_playlist(playlist);
+            }
+        }
     }
 }
 

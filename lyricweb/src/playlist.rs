@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{Slide, SlideIndex, State, title_for_song};
+use crate::model::{Playlist, Slide, SlideIndex, State, title_for_song};
 use leptos::prelude::*;
 use openlyrics::{simplify_contents, types::LyricEntry};
 use web_sys::{HtmlInputElement, SubmitEvent};
@@ -43,7 +43,7 @@ pub fn Playlist(
             <input type="button" value="Delete" disabled=no_current_playlist on:click=move |_| delete_playlist(write_state, current_playlist, write_current_playlist, write_current_slide)/>
             <form on:submit=move |event| rename_playlist(event, playlist_name.get().unwrap(), current_playlist, write_state)>
                 <input type="text" node_ref=playlist_name minlength="1" size="10"
-                    prop:value=move || current_playlist.get().map(|playlist_id| state.get().playlists.get(&playlist_id).unwrap().name.clone()) />
+                    prop:value=move || current_playlist.get().map(|playlist_id| state.get().playlists.get(&playlist_id).unwrap().name.clone()).unwrap_or_default() />
                 <input type="submit" value="Rename" disabled=no_current_playlist />
             </form>
         </div>
@@ -131,7 +131,7 @@ fn rename_playlist(
 /// Creates a new playlist and switches to it.
 fn new_playlist(write_state: WriteSignal<State>, write_current_playlist: WriteSignal<Option<u32>>) {
     let mut new_playlist_id = 0;
-    write_state.update(|state| new_playlist_id = state.add_playlist("New"));
+    write_state.update(|state| new_playlist_id = state.add_playlist(Playlist::new("New")));
     write_current_playlist.set(Some(new_playlist_id));
 }
 
