@@ -164,7 +164,11 @@ fn music_xml_to_open_lyrics(score: &ScorePartwise) -> Song {
                                                 }
                                             }
                                             last_line.push_str(
-                                                &text_lyric.text.content.replace("&quot;", "\""),
+                                                &text_lyric
+                                                    .text
+                                                    .content
+                                                    .replace("&quot;", "\"")
+                                                    .replace("&apos;", "'"),
                                             );
                                         }
                                         _ => {}
