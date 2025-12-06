@@ -2,7 +2,10 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use openlyrics::types::{LyricEntry, Song};
+use openlyrics::{
+    simplify_contents,
+    types::{LyricEntry, Song},
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -289,6 +292,18 @@ pub enum PlaylistEntry {
 /// Returns the title to use for the given song.
 pub fn title_for_song(song: &Song) -> &str {
     &song.properties.titles.titles[0].title
+}
+
+/// Returns the first line of the given lyric entry and lines of the given song, if any.
+pub fn first_line(song: &Song, lyric_entry_index: usize, lines_index: usize) -> Option<String> {
+    let lyric_entry = song.lyrics.lyrics.get(lyric_entry_index)?;
+    if let LyricEntry::Verse { lines, .. } = lyric_entry {
+        simplify_contents(&lines.get(lines_index)?.contents)
+            .into_iter()
+            .next()
+    } else {
+        None
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

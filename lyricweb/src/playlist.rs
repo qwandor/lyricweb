@@ -2,9 +2,8 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{Playlist, Slide, SlideIndex, State, title_for_song};
+use crate::model::{Playlist, Slide, SlideIndex, State, first_line, title_for_song};
 use leptos::prelude::*;
-use openlyrics::{simplify_contents, types::LyricEntry};
 use web_sys::{HtmlInputElement, SubmitEvent};
 
 /// Playlist of songs and other items to be presented.
@@ -73,14 +72,7 @@ pub fn Playlist(
                         } => {
                             let song = &state.songs[&song_id];
                             let lyric_entry = &song.lyrics.lyrics[lyric_entry_index];
-
-                            let first_line = if let LyricEntry::Verse { lines, .. } = lyric_entry {
-                                simplify_contents(&lines[lines_index].contents)
-                                    .into_iter()
-                                    .next()
-                            } else {
-                                None
-                            };
+                            let first_line = first_line(song, lyric_entry_index, lines_index);
 
                             view! {
                                 <option value={slide_index.to_string()}>{

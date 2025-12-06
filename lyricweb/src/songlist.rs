@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{PlaylistEntry, State, title_for_song};
+use crate::model::{PlaylistEntry, State, first_line, title_for_song};
 use leptos::prelude::*;
 use web_sys::{HtmlSelectElement, SubmitEvent};
 
@@ -15,10 +15,13 @@ pub fn SongList(
 ) -> impl IntoView {
     let song_list = NodeRef::new();
     let no_current_playlist = move || current_playlist.get().is_none();
+    let (selected_song, write_selected_song) = signal(None);
 
     view! {
         <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state)>
-            <select size="5" id="song-list" node_ref=song_list>
+            <select size="5" id="song-list" node_ref=song_list on:change:target=move |event| {
+                write_selected_song.set(event.target().value().parse().ok());
+            }>
                 {move || {
                     let state = state.read();
                     state.songs_by_title().into_iter().map(|(id, song)| {
@@ -28,11 +31,44 @@ pub fn SongList(
                     }).collect::<Vec<_>>()
                 }}
             </select>
+            <SongInfo state selected_song />
             <div class="button-row">
                 <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
                 <input type="submit" value="Add to playlist" disabled=no_current_playlist />
             </div>
         </form>
+    }
+}
+
+/// Information about a particular song.
+#[component]
+fn SongInfo(state: Signal<State>, selected_song: ReadSignal<Option<u32>>) -> impl IntoView {
+    move || {
+        let state = state.read();
+        if let Some(song_id) = selected_song.get()
+            && let Some(song) = state.songs.get(&song_id)
+        {
+            Some(view! {
+                <div>
+                <h2>{title_for_song(&song).to_owned()}</h2>
+                <p>
+                    "Author: "
+                    {song.properties.authors.authors.iter().map(|author| {
+                        let author_name = &author.name;
+                        if let Some(author_type) = &author.author_type {
+                            format!("{author_name} ({author_type})")
+                        } else {
+                            format!("{author_name}")
+                        }
+                    }).collect::<Vec<_>>().join(", ") }
+                    <br/>
+                    "First line: " {first_line(&song, 0, 0)}
+                </p>
+                </div>
+            })
+        } else {
+            None
+        }
     }
 }
 
