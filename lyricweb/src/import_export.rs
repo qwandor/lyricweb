@@ -7,8 +7,10 @@ use crate::{
     model::State,
 };
 use gloo_file::{File, futures::read_as_text};
+use gloo_net::http::Request;
 use gloo_utils::format::JsValueSerdeExt;
 use leptos::prelude::*;
+use leptos_router::NavigateOptions;
 use wasm_bindgen::JsValue;
 use web_sys::{OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent};
 
@@ -43,6 +45,33 @@ pub async fn export(
     } else {
         write_error.set(None);
     }
+}
+
+/// Imports a single song or the entire state from a URL, and then redirect to the main page.
+pub async fn import_url(
+    event: SubmitEvent,
+    url: String,
+    write_state: WriteSignal<State>,
+    write_error: WriteSignal<Option<String>>,
+    navigate: impl Fn(&str, NavigateOptions) + Clone,
+) {
+    event.prevent_default();
+
+    if let Err(e) = try_import_url(url, write_state).await {
+        write_error.set(Some(e));
+    } else {
+        navigate("/", Default::default());
+    }
+}
+
+async fn try_import_url(url: String, write_state: WriteSignal<State>) -> Result<(), String> {
+    let response = Request::get(&url).send().await.map_err(|e| e.to_string())?;
+    if !response.ok() {
+        return Err(format!("Error: {}", response.status_text()));
+    }
+
+    let body = response.text().await.map_err(|e| e.to_string())?;
+    import_str(url.ends_with(".json"), &body, write_state)
 }
 
 /// Imports a single song or the entire state from a file.
@@ -87,36 +116,33 @@ pub async fn import(
         return;
     };
 
-    import_file(file, write_state, write_output, write_error).await;
+    write_error.set(import_file(file, write_state, write_output).await.err());
 }
 
 async fn import_file(
     file: File,
     write_state: WriteSignal<State>,
     write_output: WriteSignal<Option<String>>,
-    write_error: WriteSignal<Option<String>>,
-) {
+) -> Result<(), String> {
     write_output.set(Some(format!(
         "{}: {} bytes, {}",
         file.name(),
         file.size(),
         file.raw_mime_type()
     )));
-    let text = read_as_text(&file).await.unwrap();
-    if file.name().ends_with(".json") {
-        match serde_json::from_str(&text) {
-            Ok(imported_state) => write_state.update(|state| state.merge(&imported_state)),
-            Err(e) => write_error.set(Some(e.to_string())),
-        }
+    let text = read_as_text(&file).await.map_err(|e| e.to_string())?;
+    import_str(file.name().ends_with(".json"), &text, write_state)
+}
+
+fn import_str(json: bool, text: &str, write_state: WriteSignal<State>) -> Result<(), String> {
+    if json {
+        let imported_state = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+        write_state.update(|state| state.merge(&imported_state));
     } else {
-        match quick_xml::de::from_str(&text) {
-            Ok(song) => {
-                write_error.set(None);
-                write_state.update(|state| {
-                    state.add_song(song);
-                });
-            }
-            Err(e) => write_error.set(Some(e.to_string())),
-        }
+        let song = quick_xml::de::from_str(&text).map_err(|e| e.to_string())?;
+        write_state.update(|state| {
+            state.add_song(song);
+        });
     }
+    Ok(())
 }

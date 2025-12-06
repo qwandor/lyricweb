@@ -10,7 +10,7 @@ mod slide;
 mod songlist;
 
 use crate::{
-    import_export::{export, import},
+    import_export::{export, import, import_url},
     model::{PlaylistEntry, SlideIndex, State},
     playlist::Playlist,
     slide::CurrentSlide,
@@ -23,7 +23,7 @@ use leptos::{
 };
 use leptos_router::{
     components::{Route, Router, Routes},
-    hooks::query_signal,
+    hooks::{query_signal, use_navigate},
     path,
 };
 use leptos_use::storage::use_local_storage;
@@ -46,18 +46,35 @@ fn App() -> impl IntoView {
     view! {
         <Router>
             <Routes fallback=|| "Not found">
-                <Route path=path!("*any") view=move || if query_signal("present").0.get().unwrap_or_default() {
+                <Route path=path!("*any") view={move || if query_signal("present").0.get().unwrap_or_default() {
                     view! {
                         <CurrentSlide state current_slide/>
+                    }.into_any()
+                } else if let Some(url) = query_signal::<String>("import_url").0.get() {
+                    view! {
+                        <ImportUrl url write_state />
                     }.into_any()
                 } else {
                     view! {
                         <Controller state write_state current_slide write_current_slide/>
                     }.into_any()
                 }
-                />
+            }/>
             </Routes>
         </Router>
+    }
+}
+
+#[component]
+fn ImportUrl(url: String, write_state: WriteSignal<State>) -> impl IntoView {
+    let (error, write_error) = signal(None);
+
+    view! {
+        <p>"Import '" {url.clone()} "'?"</p>
+        <form on:submit=move |event| { let url = url.clone(); spawn_local(import_url(event, url, write_state, write_error, use_navigate())); }>
+            <input type="submit" value="Import" />
+        </form>
+        <p id="error">{ error }</p>
     }
 }
 
