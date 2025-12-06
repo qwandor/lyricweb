@@ -52,14 +52,12 @@ fn song_page(song: &Song, lyric_entry_index: usize, lines_index: usize) -> impl 
                 LyricEntry::Verse { name, lines, .. } => {
                     let line = &lines[lines_index];
                     view! {
-                        <div class="verse">
                         <p>
                         { if name.starts_with('v') { Some(format!("{}. ", &name[1..])) } else { None } }
                         { line.part.as_ref().map(|part| view! { <em>"(" {part.as_str()} ")"</em><br/> }) }
                         { simplify_contents(&line.contents).into_iter().map(|simple_line| view! { {simple_line} <br/> } ).collect::<Vec<_>>() }
                         { line.repeat.map(|repeat| view! { <strong>"x" {repeat}</strong><br/> } ) }
                         </p>
-                        </div>
                     }.into_any()
                 }
                 LyricEntry::Instrument { name, .. } => {
