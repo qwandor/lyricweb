@@ -28,7 +28,8 @@ use leptos_router::{
 };
 use leptos_use::storage::use_local_storage;
 use std::cell::RefCell;
-use web_sys::{HtmlInputElement, SubmitEvent, Window};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{HtmlInputElement, PresentationRequest, SubmitEvent, Window};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -132,7 +133,8 @@ fn Controller(
             </div>
             <div class="column">
                 <form>
-                    <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                    <input type="button" value="Present in window" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                    <input type="button" value="Present on external screen" on:click=move |_| spawn_local(open_external_presentation())/>
                 </form>
                 <div class="preview">
                     <CurrentSlide state current_slide/>
@@ -155,6 +157,12 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
         .unwrap();
 
     *presentation_window = Some(new_presentation_window);
+}
+
+/// Opens the presentation on an external monitor.
+async fn open_external_presentation() {
+    let request = PresentationRequest::new_with_url("?present=true").unwrap();
+    JsFuture::from(request.start().unwrap()).await.unwrap();
 }
 
 fn show_error(result: Result<(), String>, write_error: WriteSignal<Option<String>>) {
