@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{PlaylistEntry, State, first_line, title_for_song};
+use crate::model::{PlaylistEntry, State, first_line, song_matches_filter, title_for_song};
 use leptos::prelude::*;
 use web_sys::{HtmlSelectElement, SubmitEvent};
 
@@ -16,15 +16,17 @@ pub fn SongList(
     let song_list = NodeRef::new();
     let no_current_playlist = move || current_playlist.get().is_none();
     let (selected_song, write_selected_song) = signal(None);
+    let (filter, write_filter) = signal(String::new());
 
     view! {
         <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state)>
+            <input type="text" placeholder="Search" on:input:target=move |event| write_filter.set(event.target().value()) />
             <select size="5" id="song-list" node_ref=song_list on:change:target=move |event| {
                 write_selected_song.set(event.target().value().parse().ok());
             }>
                 {move || {
                     let state = state.read();
-                    state.songs_by_title().into_iter().map(|(id, song)| {
+                    state.songs_by_title().into_iter().filter(|(_, song)| song_matches_filter(song, &filter.read())).map(|(id, song)| {
                         view! {
                             <option value={id.to_string()}>{title_for_song(&song).to_owned()}</option>
                         }

@@ -375,6 +375,13 @@ pub fn title_for_song(song: &Song) -> &str {
     &song.properties.titles.titles[0].title
 }
 
+/// Returns whether the given song should be displayed when the given search filter is entered.
+pub fn song_matches_filter(song: &Song, filter: &str) -> bool {
+    title_for_song(song)
+        .to_lowercase()
+        .contains(&filter.to_lowercase())
+}
+
 /// Returns the first line of the given lyric entry and lines of the given song, if any.
 pub fn first_line(song: &Song, lyric_entry_index: usize, lines_index: usize) -> Option<String> {
     let lyric_entry = song.lyrics.lyrics.get(lyric_entry_index)?;
