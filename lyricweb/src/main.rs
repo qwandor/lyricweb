@@ -71,7 +71,7 @@ fn ImportUrl(url: String, write_state: WriteSignal<State>) -> impl IntoView {
 
     view! {
         <p>"Import '" {url.clone()} "'?"</p>
-        <form on:submit=move |event| { let url = url.clone(); spawn_local(import_url(event, url, write_state, write_error, use_navigate())); }>
+        <form on:submit=move |event| { let url = url.clone(); spawn_show_error(import_url(event, url, write_state, use_navigate()), write_error); }>
             <input type="submit" value="Import" />
         </form>
         <p id="error">{ error }</p>
@@ -108,10 +108,10 @@ fn Controller(
             <div class="column">
                 <h1>"Lyricweb"</h1>
                 <div class="button-row">
-                    <form on:submit=move |event| spawn_local(import(event, write_state, write_output, write_error)) >
+                    <form on:submit=move |event| spawn_show_error(import(event, write_state, write_output), write_error) >
                         <input type="submit" value="Import" />
                     </form>
-                    <form on:submit=move |event| spawn_local(export(event, state, write_error)) >
+                    <form on:submit=move |event| spawn_show_error(export(event, state), write_error) >
                         <input type="submit" value="Export" />
                     </form>
                 </div>

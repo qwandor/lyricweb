@@ -5,7 +5,6 @@
 use crate::{
     files::{FileType, pick_open_file, pick_save_file, write_and_close},
     model::State,
-    show_error,
 };
 use gloo_file::{File, futures::read_as_text};
 use gloo_net::http::Request;
@@ -18,11 +17,7 @@ use web_sys::{
 };
 
 /// Exports the state to a file.
-pub async fn export(
-    event: SubmitEvent,
-    state: Signal<State>,
-    write_error: WriteSignal<Option<String>>,
-) {
+pub async fn export(event: SubmitEvent, state: Signal<State>) -> Result<(), String> {
     event.prevent_default();
 
     let options = SaveFilePickerOptions::new();
@@ -39,10 +34,12 @@ pub async fn export(
     );
 
     let Ok(file) = pick_save_file(&options).await else {
-        return;
+        return Ok(());
     };
 
-    show_error(export_to_file(state, file).await, write_error);
+    export_to_file(state, file).await?;
+
+    Ok(())
 }
 
 async fn export_to_file(
@@ -63,26 +60,20 @@ pub async fn import_url(
     event: SubmitEvent,
     url: String,
     write_state: WriteSignal<State>,
-    write_error: WriteSignal<Option<String>>,
     navigate: impl Fn(&str, NavigateOptions) + Clone,
-) {
+) -> Result<(), String> {
     event.prevent_default();
 
-    if let Err(e) = try_import_url(url, write_state).await {
-        write_error.set(Some(e));
-    } else {
-        navigate(".", Default::default());
-    }
-}
-
-async fn try_import_url(url: String, write_state: WriteSignal<State>) -> Result<(), String> {
     let response = Request::get(&url).send().await.map_err(|e| e.to_string())?;
     if !response.ok() {
         return Err(format!("Error: {}", response.status_text()));
     }
 
     let body = response.text().await.map_err(|e| e.to_string())?;
-    import_str(url.ends_with(".json"), &body, write_state)
+    import_str(url.ends_with(".json"), &body, write_state)?;
+
+    navigate(".", Default::default());
+    Ok(())
 }
 
 /// Imports a single song or the entire state from a file.
@@ -90,8 +81,7 @@ pub async fn import(
     event: SubmitEvent,
     write_state: WriteSignal<State>,
     write_output: WriteSignal<Option<String>>,
-    write_error: WriteSignal<Option<String>>,
-) {
+) -> Result<(), String> {
     event.prevent_default();
 
     let options = OpenFilePickerOptions::new();
@@ -124,13 +114,12 @@ pub async fn import(
     );
 
     let Ok(file) = pick_open_file(&options).await else {
-        return;
+        return Ok(());
     };
 
-    show_error(
-        import_file(file, write_state, write_output).await,
-        write_error,
-    );
+    import_file(file, write_state, write_output).await?;
+
+    Ok(())
 }
 
 async fn import_file(
