@@ -2,6 +2,23 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+//! Types deriving the appropriate serde traits to be used with
+//! [`quick-xml`](https://crates.io/crates/quick-xml) for parsing
+//! [OpenLyrics](https://docs.openlyrics.org/en/latest/) XML files, and some helper functions and
+//! methods for common tasks.
+//!
+//! [`types::Song`] is the top-level type for parsing an OpenLyrics file, e.g.:
+//!
+//! ```no_run
+//! use openlyrics::types::Song;
+//! use quick_xml::de::from_reader;
+//! use std::{fs::File, io::BufReader};
+//!
+//! let song = from_reader::<_, Song>(BufReader::new(File::open("song.xml")?))?;
+//! println!("Title: {}", song.properties.titles.titles[0].title);
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+
 pub mod types;
 
 use crate::types::VerseContent;

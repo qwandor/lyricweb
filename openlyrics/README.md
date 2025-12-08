@@ -8,6 +8,17 @@ A Rust library for parsing [OpenLyrics](https://docs.openlyrics.org/en/latest/) 
 This is not an officially supported Google product. This project is not eligible for the
 [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
 
+## Usage
+
+```rust
+use openlyrics::types::Song;
+use quick_xml::de::from_reader;
+use std::{fs::File, io::BufReader};
+
+let song = from_reader::<_, Song>(BufReader::new(File::open("song.xml")?))?;
+println!("Title: {}", song.properties.titles.titles[0].title);
+```
+
 ## License
 
 Licensed under either of

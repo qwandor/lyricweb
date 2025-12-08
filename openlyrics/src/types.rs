@@ -2,8 +2,11 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+//! Types for OpenLyrics XML elements.
+
 use serde::{Deserialize, Serialize};
 
+/// The top-level element of an OpenLyrics XML file.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename = "song")]
 pub struct Song {
