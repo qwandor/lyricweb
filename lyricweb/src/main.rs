@@ -161,6 +161,13 @@ fn show_error(result: Result<(), String>, write_error: WriteSignal<Option<String
     write_error.set(result.err());
 }
 
+fn spawn_show_error(
+    fut: impl Future<Output = Result<(), String>> + 'static,
+    write_error: WriteSignal<Option<String>>,
+) {
+    spawn_local((async move || show_error(fut.await, write_error))())
+}
+
 fn add_text_to_playlist(
     event: SubmitEvent,
     text_entry: HtmlInputElement,
