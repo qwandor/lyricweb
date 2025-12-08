@@ -157,6 +157,10 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
     *presentation_window = Some(new_presentation_window);
 }
 
+fn show_error(result: Result<(), String>, write_error: WriteSignal<Option<String>>) {
+    write_error.set(result.err());
+}
+
 fn add_text_to_playlist(
     event: SubmitEvent,
     text_entry: HtmlInputElement,

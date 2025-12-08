@@ -5,6 +5,7 @@
 use crate::{
     files::{FileType, pick_open_file, pick_save_file, write_and_close},
     model::State,
+    show_error,
 };
 use gloo_file::{File, futures::read_as_text};
 use gloo_net::http::Request;
@@ -41,7 +42,7 @@ pub async fn export(
         return;
     };
 
-    write_error.set(export_to_file(state, file).await.err());
+    show_error(export_to_file(state, file).await, write_error);
 }
 
 async fn export_to_file(
@@ -126,7 +127,10 @@ pub async fn import(
         return;
     };
 
-    write_error.set(import_file(file, write_state, write_output).await.err());
+    show_error(
+        import_file(file, write_state, write_output).await,
+        write_error,
+    );
 }
 
 async fn import_file(
