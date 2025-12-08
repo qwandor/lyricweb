@@ -6,6 +6,7 @@ mod files;
 mod import_export;
 mod model;
 mod playlist;
+mod screens;
 mod slide;
 mod songlist;
 
@@ -13,6 +14,7 @@ use crate::{
     import_export::{export, import, import_url},
     model::{PlaylistEntry, SlideIndex, State},
     playlist::Playlist,
+    screens::use_screens,
     slide::CurrentSlide,
     songlist::SongList,
 };
@@ -28,7 +30,8 @@ use leptos_router::{
 };
 use leptos_use::storage::use_local_storage;
 use std::cell::RefCell;
-use web_sys::{HtmlInputElement, SubmitEvent, Window};
+use wasm_bindgen::JsValue;
+use web_sys::{HtmlInputElement, ScreenDetailed, SubmitEvent, Window};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -100,6 +103,7 @@ fn Controller(
 
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
+    let screens = use_screens();
 
     let presentation_window = RefCell::new(None);
 
@@ -132,7 +136,12 @@ fn Controller(
             </div>
             <div class="column">
                 <form>
-                    <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                    <input type="button" value="Present in window" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                    {move || {
+                        screens.get().into_iter().filter(|screen| !screen.is_primary()).map(|screen| view! {
+                            <input type="button" value={format!("Present on {}", screen.label())} on:click=move |_| spawn_show_error(open_presentation_secondary_screen(screen.clone()), write_error) />
+                        }).collect::<Vec<_>>()
+                    }}
                 </form>
                 <div class="preview">
                     <CurrentSlide state current_slide/>
@@ -166,6 +175,12 @@ fn spawn_show_error(
     write_error: WriteSignal<Option<String>>,
 ) {
     spawn_local((async move || show_error(fut.await, write_error))())
+}
+
+async fn open_presentation_secondary_screen(screen: ScreenDetailed) -> Result<(), String> {
+    gloo_console::log!(screen);
+
+    Ok(())
 }
 
 fn add_text_to_playlist(

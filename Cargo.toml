@@ -5,3 +5,9 @@ resolver = "3"
 [profile.release]
 lto = true
 opt-level = "s"
+
+[patch.crates-io]
+js-sys = { path = "../wasm-bindgen/crates/js-sys" }
+wasm-bindgen = { path = "../wasm-bindgen" }
+web-sys = { path = "../wasm-bindgen/crates/web-sys" }
+wasm-bindgen-futures = { path = "../wasm-bindgen/crates/futures" }
