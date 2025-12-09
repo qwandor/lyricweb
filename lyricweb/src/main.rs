@@ -11,9 +11,9 @@ mod songlist;
 
 use crate::{
     import_export::{export, import, import_url},
-    model::{PlaylistEntry, SlideIndex, State},
+    model::{PlaylistEntry, SlideIndex, State, slide::SlideContent},
     playlist::Playlist,
-    slide::CurrentSlide,
+    slide::Slide,
     songlist::SongList,
 };
 use leptos::{
@@ -43,13 +43,20 @@ fn App() -> impl IntoView {
     let (state, write_state, _) = use_local_storage::<_, JsonSerdeCodec>("state");
     let (current_slide, write_current_slide, _) =
         use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_slide");
+    let current_slide_content = move || {
+        if let Some(current_slide) = current_slide.get() {
+            SlideContent::for_index(&state.read(), current_slide).unwrap_or_default()
+        } else {
+            Default::default()
+        }
+    };
 
     view! {
         <Router>
             <Routes fallback=|| "Not found">
                 <Route path=path!("*any") view={move || if query_signal("present").0.get().unwrap_or_default() {
                     view! {
-                        <CurrentSlide state current_slide/>
+                        <Slide slide=current_slide_content/>
                     }.into_any()
                 } else if let Some(url) = query_signal::<String>("import_url").0.get() {
                     view! {
@@ -57,7 +64,7 @@ fn App() -> impl IntoView {
                     }.into_any()
                 } else {
                     view! {
-                        <Controller state write_state current_slide write_current_slide/>
+                        <Controller state write_state current_slide write_current_slide current_slide_content/>
                     }.into_any()
                 }
             }/>
@@ -86,6 +93,7 @@ fn Controller(
     write_state: WriteSignal<State>,
     current_slide: Signal<Option<SlideIndex>>,
     write_current_slide: WriteSignal<Option<SlideIndex>>,
+    #[prop(into)] current_slide_content: Signal<SlideContent>,
 ) -> impl IntoView {
     let text_entry = NodeRef::new();
 
@@ -137,7 +145,7 @@ fn Controller(
                     <input type="button" value="Present on external screen" on:click=move |_| spawn_local(open_external_presentation())/>
                 </form>
                 <div class="preview">
-                    <CurrentSlide state current_slide/>
+                    <Slide slide=current_slide_content/>
                 </div>
             </div>
         </div>
