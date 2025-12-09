@@ -53,7 +53,6 @@ pub fn PresentationReceiver() -> impl IntoView {
     );
 
     view! {
-        "Remote"
         <p id="error">{ error }</p>
         <Slide slide=current_slide_content />
     }
