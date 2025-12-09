@@ -13,10 +13,11 @@ use crate::{
     import_export::{export, import, import_url},
     model::{PlaylistEntry, SlideIndex, State, slide::SlideContent},
     playlist::Playlist,
-    slide::Slide,
+    slide::{PresentationReceiver, Slide},
     songlist::SongList,
 };
 use leptos::{
+    ev::Custom,
     prelude::*,
     server::codee::string::{FromToStringCodec, JsonSerdeCodec, OptionCodec},
     task::spawn_local,
@@ -26,10 +27,14 @@ use leptos_router::{
     hooks::{query_signal, use_navigate},
     path,
 };
-use leptos_use::storage::use_local_storage;
-use std::cell::RefCell;
+use leptos_use::{storage::use_local_storage, use_event_listener};
+use std::{cell::RefCell, sync::Arc};
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{HtmlInputElement, PresentationRequest, SubmitEvent, Window};
+use web_sys::{
+    Event, HtmlInputElement, PresentationConnection, PresentationConnectionState,
+    PresentationRequest, SubmitEvent, Window,
+};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -57,6 +62,10 @@ fn App() -> impl IntoView {
                 <Route path=path!("*any") view={move || if query_signal("present").0.get().unwrap_or_default() {
                     view! {
                         <Slide slide=current_slide_content/>
+                    }.into_any()
+                } else if query_signal("present_remote").0.get().unwrap_or_default() {
+                    view! {
+                        <PresentationReceiver />
                     }.into_any()
                 } else if let Some(url) = query_signal::<String>("import_url").0.get() {
                     view! {
@@ -111,6 +120,7 @@ fn Controller(
     let (error, write_error) = signal(None);
 
     let presentation_window = RefCell::new(None);
+    let presentation_connection = Arc::new(RefCell::new(None));
 
     view! {
         <div id="controller">
@@ -142,7 +152,7 @@ fn Controller(
             <div class="column">
                 <form>
                     <input type="button" value="Present in window" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
-                    <input type="button" value="Present on external screen" on:click=move |_| spawn_local(open_external_presentation())/>
+                    <input type="button" value="Present on external screen" on:click=move |_| spawn_local(open_external_presentation(current_slide_content, presentation_connection.clone()))/>
                 </form>
                 <div class="preview">
                     <Slide slide=current_slide_content/>
@@ -168,9 +178,48 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
 }
 
 /// Opens the presentation on an external monitor.
-async fn open_external_presentation() {
-    let request = PresentationRequest::new_with_url("?present=true").unwrap();
-    JsFuture::from(request.start().unwrap()).await.unwrap();
+async fn open_external_presentation(
+    current_slide_content: Signal<SlideContent>,
+    presentation_connection: Arc<RefCell<Option<PresentationConnection>>>,
+) {
+    if let Some(connection) = presentation_connection.borrow_mut().take() {
+        connection.terminate().unwrap();
+        return;
+    }
+
+    let request = PresentationRequest::new_with_url("?present_remote=true").unwrap();
+    let connection = JsFuture::from(request.start().unwrap())
+        .await
+        .unwrap()
+        .unchecked_into::<PresentationConnection>();
+
+    gloo_console::log!(&connection);
+    presentation_connection
+        .borrow_mut()
+        .replace(connection.clone());
+
+    _ = use_event_listener(
+        connection.clone(),
+        Custom::new("connect"),
+        move |event: Event| {
+            gloo_console::log!(&event);
+            gloo_console::log!(&connection);
+            let data = serde_json::to_string(&*current_slide_content.read_untracked()).unwrap();
+            gloo_console::log!(format!("Sending {data}"));
+            connection.send_with_str(&data).unwrap();
+            gloo_console::log!("Sent");
+        },
+    );
+
+    Effect::new(move || {
+        let data = serde_json::to_string(&*current_slide_content.read()).unwrap();
+        gloo_console::log!(format!("Sending {data}"));
+        if let Some(connection) = presentation_connection.borrow().as_ref() {
+            if connection.state() == PresentationConnectionState::Connected {
+                connection.send_with_str(&data).unwrap();
+            }
+        }
+    });
 }
 
 fn show_error(result: Result<(), String>, write_error: WriteSignal<Option<String>>) {
