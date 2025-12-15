@@ -243,6 +243,13 @@ fn ThemeSettings(state: Signal<State>, write_state: WriteSignal<State>) -> impl 
                         on:change:target=move |event| write_state.write().theme.background_colour = event.target().value()
                     /></td>
                 </tr>
+                <tr>
+                    <td>Font</td>
+                    <td><input type="text"
+                        prop:value=move || state.read().theme.font_family.clone()
+                        on:change:target=move |event| write_state.write().theme.font_family = event.target().value()
+                    /></td>
+                </tr>
             </table>
         </form>
     }

@@ -25,6 +25,7 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
             <Style>
             ".slide {"
                 "background-color: " {theme.background_colour} ";"
+                "font-family: " {theme.font_family} ";"
             "}"
             ".slide h1 {"
                 "font-size:" {theme.heading_size}"cqi;"

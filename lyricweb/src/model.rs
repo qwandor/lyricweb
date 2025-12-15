@@ -286,6 +286,7 @@ pub struct Theme {
     pub heading_colour: String,
     pub body_colour: String,
     pub background_colour: String,
+    pub font_family: String,
 }
 
 impl Default for Theme {
@@ -296,6 +297,7 @@ impl Default for Theme {
             heading_colour: "#000000".to_string(),
             body_colour: "#000000".to_string(),
             background_colour: "#ffffff".to_string(),
+            font_family: "sans-serif".to_string(),
         }
     }
 }
