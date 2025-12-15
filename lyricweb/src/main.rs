@@ -205,19 +205,19 @@ fn ThemeSettings(state: Signal<State>, write_state: WriteSignal<State>) -> impl 
             <h2>Theme</h2>
             <table>
                 <tr>
-                    <td>Title size</td>
+                    <td>Heading size</td>
                     <td><input type="number" min="1" max="10"
-                        prop:value=move || state.read().theme.title_size
-                        on:change:target=move |event| if let Ok(title_size) = event.target().value().parse() {
-                            write_state.write().theme.title_size = title_size;
+                        prop:value=move || state.read().theme.heading_size
+                        on:change:target=move |event| if let Ok(heading_size) = event.target().value().parse() {
+                            write_state.write().theme.heading_size = heading_size;
                         }
                     /></td>
                 </tr>
                 <tr>
-                    <td>Title colour</td>
+                    <td>Heading colour</td>
                     <td><input type="color"
-                        prop:value=move || state.read().theme.title_colour.clone()
-                        on:change:target=move |event| write_state.write().theme.title_colour = event.target().value()
+                        prop:value=move || state.read().theme.heading_colour.clone()
+                        on:change:target=move |event| write_state.write().theme.heading_colour = event.target().value()
                     /></td>
                 </tr>
                 <tr>

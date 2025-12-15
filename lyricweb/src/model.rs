@@ -281,9 +281,9 @@ impl State {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Theme {
-    pub title_size: u32,
+    pub heading_size: u32,
     pub body_size: u32,
-    pub title_colour: String,
+    pub heading_colour: String,
     pub body_colour: String,
     pub background_colour: String,
 }
@@ -291,9 +291,9 @@ pub struct Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            title_size: 5,
+            heading_size: 5,
             body_size: 4,
-            title_colour: "#000000".to_string(),
+            heading_colour: "#000000".to_string(),
             body_colour: "#000000".to_string(),
             background_colour: "#ffffff".to_string(),
         }
