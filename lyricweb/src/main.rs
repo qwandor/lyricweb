@@ -11,12 +11,13 @@ mod songlist;
 
 use crate::{
     import_export::{export, import, import_url},
-    model::{PlaylistEntry, SlideIndex, State},
+    model::{PlaylistEntry, SlideIndex, State, slide::SlideContent},
     playlist::Playlist,
-    slide::CurrentSlide,
+    slide::{PresentationReceiver, Slide},
     songlist::SongList,
 };
 use leptos::{
+    ev::{Custom, change},
     prelude::*,
     server::codee::string::{FromToStringCodec, JsonSerdeCodec, OptionCodec},
     task::spawn_local,
@@ -26,9 +27,15 @@ use leptos_router::{
     hooks::{query_signal, use_navigate},
     path,
 };
-use leptos_use::storage::use_local_storage;
+use leptos_use::{storage::use_local_storage, use_event_listener};
 use std::cell::RefCell;
-use web_sys::{HtmlInputElement, SubmitEvent, Window};
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{
+    Event, HtmlInputElement, PresentationAvailability, PresentationConnection,
+    PresentationConnectionAvailableEvent, PresentationConnectionState, PresentationRequest,
+    SubmitEvent, Window,
+};
 
 fn main() {
     #[cfg(feature = "console_error_panic_hook")]
@@ -42,13 +49,24 @@ fn App() -> impl IntoView {
     let (state, write_state, _) = use_local_storage::<_, JsonSerdeCodec>("state");
     let (current_slide, write_current_slide, _) =
         use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_slide");
+    let current_slide_content = move || {
+        if let Some(current_slide) = current_slide.get() {
+            SlideContent::for_index(&state.read(), current_slide).unwrap_or_default()
+        } else {
+            Default::default()
+        }
+    };
 
     view! {
         <Router>
             <Routes fallback=|| "Not found">
                 <Route path=path!("*any") view={move || if query_signal("present").0.get().unwrap_or_default() {
                     view! {
-                        <CurrentSlide state current_slide/>
+                        <Slide slide=current_slide_content/>
+                    }.into_any()
+                } else if query_signal("present_remote").0.get().unwrap_or_default() {
+                    view! {
+                        <PresentationReceiver />
                     }.into_any()
                 } else if let Some(url) = query_signal::<String>("import_url").0.get() {
                     view! {
@@ -56,7 +74,7 @@ fn App() -> impl IntoView {
                     }.into_any()
                 } else {
                     view! {
-                        <Controller state write_state current_slide write_current_slide/>
+                        <Controller state write_state current_slide write_current_slide current_slide_content/>
                     }.into_any()
                 }
             }/>
@@ -85,6 +103,7 @@ fn Controller(
     write_state: WriteSignal<State>,
     current_slide: Signal<Option<SlideIndex>>,
     write_current_slide: WriteSignal<Option<SlideIndex>>,
+    #[prop(into)] current_slide_content: Signal<SlideContent>,
 ) -> impl IntoView {
     let text_entry = NodeRef::new();
 
@@ -102,6 +121,27 @@ fn Controller(
     let (error, write_error) = signal(None);
 
     let presentation_window = RefCell::new(None);
+
+    let (presentation_displays_available, write_presentation_displays_available) = signal(false);
+    let presentation_connection = RwSignal::new_local(None);
+
+    let presentation_request =
+        StoredValue::new_local(PresentationRequest::new_with_url("?present_remote=true").unwrap());
+    show_error(
+        setup_presentation_request(
+            &presentation_request.read_value(),
+            current_slide_content,
+            presentation_connection,
+        ),
+        write_error,
+    );
+    spawn_show_error(
+        listen_presentation_availability(
+            presentation_request.read_value().clone(),
+            write_presentation_displays_available,
+        ),
+        write_error,
+    );
 
     view! {
         <div id="controller">
@@ -132,10 +172,25 @@ fn Controller(
             </div>
             <div class="column">
                 <form>
-                    <input type="button" value="Present" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                    <input type="button" value="Present in window" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
+                    {move || {
+                        if presentation_connection.read().is_some() {
+                            view! {
+                                <input type="button" value="Stop presenting" on:click=move |_| show_error(close_external_presentation(presentation_connection), write_error)/>
+                            }.into_any()
+                        } else if presentation_displays_available.get() {
+                            view! {
+                                <input type="button" value="Present on external screen" on:click=move |_| {
+                                    spawn_show_error(open_external_presentation(presentation_request.read_value().clone()), write_error)
+                                } />
+                            }.into_any()
+                        } else {
+                            view! {}.into_any()
+                        }
+                    }}
                 </form>
                 <div class="preview">
-                    <CurrentSlide state current_slide/>
+                    <Slide slide=current_slide_content/>
                 </div>
             </div>
         </div>
@@ -155,6 +210,106 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
         .unwrap();
 
     *presentation_window = Some(new_presentation_window);
+}
+
+fn setup_presentation_request(
+    request: &PresentationRequest,
+    current_slide_content: Signal<SlideContent>,
+    presentation_connection: RwSignal<Option<PresentationConnection>, LocalStorage>,
+) -> Result<(), String> {
+    Effect::new(move || {
+        let data = serde_json::to_string(&*current_slide_content.read()).unwrap();
+        if let Some(connection) = presentation_connection.read().as_ref() {
+            if connection.state() == PresentationConnectionState::Connected {
+                gloo_console::log!(format!("Sending {data}"));
+                connection.send_with_str(&data).unwrap();
+            }
+        }
+    });
+
+    if let Ok(Some(presentation)) = window().navigator().presentation() {
+        presentation.set_default_request(Some(request));
+    }
+
+    _ = use_event_listener(
+        request.clone(),
+        Custom::new("connectionavailable"),
+        move |event: PresentationConnectionAvailableEvent| {
+            gloo_console::log!(&event);
+
+            let connection = event.connection();
+            presentation_connection.write().replace(connection.clone());
+
+            _ = use_event_listener(
+                connection.clone(),
+                Custom::new("terminate"),
+                move |event: Event| {
+                    gloo_console::log!(&event);
+                    presentation_connection.set(None);
+                },
+            );
+
+            let connection_clone = connection.clone();
+            _ = use_event_listener(
+                connection.clone(),
+                Custom::new("connect"),
+                move |event: Event| {
+                    gloo_console::log!(&event);
+                    let data =
+                        serde_json::to_string(&*current_slide_content.read_untracked()).unwrap();
+                    gloo_console::log!(format!("Connect event, sending {data}"));
+                    connection_clone.send_with_str(&data).unwrap();
+                },
+            );
+
+            if connection.state() == PresentationConnectionState::Connected {
+                let data = serde_json::to_string(&*current_slide_content.read_untracked()).unwrap();
+                gloo_console::log!(format!("Connected already, sending {data}"));
+                connection.send_with_str(&data).unwrap();
+            }
+        },
+    );
+
+    Ok(())
+}
+
+async fn listen_presentation_availability(
+    request: PresentationRequest,
+    write_presentation_displays_available: WriteSignal<bool>,
+) -> Result<(), String> {
+    let availability = JsFuture::from(request.get_availability().map_err(|e| format!("{e:?}"))?)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .unchecked_into::<PresentationAvailability>();
+
+    write_presentation_displays_available.set(availability.value());
+    _ = use_event_listener(availability.clone(), change, move |_| {
+        write_presentation_displays_available.set(availability.value());
+    });
+
+    Ok(())
+}
+
+fn close_external_presentation(
+    presentation_connection: RwSignal<Option<PresentationConnection>, LocalStorage>,
+) -> Result<(), String> {
+    let connection = presentation_connection.get();
+    if let Some(connection) = connection {
+        connection.terminate().map_err(|e| format!("{e:?}"))?;
+    }
+    Ok(())
+}
+
+/// Opens the presentation on an external monitor.
+async fn open_external_presentation(request: PresentationRequest) -> Result<(), String> {
+    let connection = JsFuture::from(request.start().map_err(|e| format!("{e:?}"))?)
+        .await
+        .map_err(|e| format!("{e:?}"))?
+        .unchecked_into::<PresentationConnection>();
+
+    gloo_console::log!(&connection);
+
+    Ok(())
 }
 
 fn show_error(result: Result<(), String>, write_error: WriteSignal<Option<String>>) {
