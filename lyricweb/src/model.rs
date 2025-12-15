@@ -19,8 +19,11 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct State {
+    #[serde(default)]
     pub songs: BTreeMap<u32, Song>,
+    #[serde(default)]
     pub playlists: BTreeMap<u32, Playlist>,
+    #[serde(default)]
     pub theme: Theme,
 }
 
@@ -281,11 +284,17 @@ impl State {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Theme {
+    #[serde(default)]
     pub heading_size: u32,
+    #[serde(default)]
     pub body_size: u32,
+    #[serde(default)]
     pub heading_colour: String,
+    #[serde(default)]
     pub body_colour: String,
+    #[serde(default)]
     pub background_colour: String,
+    #[serde(default)]
     pub font_family: String,
 }
 
@@ -350,6 +359,7 @@ fn push_lyric_entry_pages(
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Playlist {
     pub name: String,
+    #[serde(default)]
     pub entries: Vec<PlaylistEntry>,
 }
 
