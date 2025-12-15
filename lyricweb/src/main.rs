@@ -192,8 +192,59 @@ fn Controller(
                 <div class="preview">
                     <Slide slide=current_slide_content/>
                 </div>
+                <ThemeSettings state write_state />
             </div>
         </div>
+    }
+}
+
+#[component]
+fn ThemeSettings(state: Signal<State>, write_state: WriteSignal<State>) -> impl IntoView {
+    view! {
+        <form>
+            <h2>Theme</h2>
+            <table>
+                <tr>
+                    <td>Title size</td>
+                    <td><input type="number" min="1" max="10"
+                        prop:value=move || state.read().theme.title_size
+                        on:change:target=move |event| if let Ok(title_size) = event.target().value().parse() {
+                            write_state.write().theme.title_size = title_size;
+                        }
+                    /></td>
+                </tr>
+                <tr>
+                    <td>Title colour</td>
+                    <td><input type="color"
+                        prop:value=move || state.read().theme.title_colour.clone()
+                        on:change:target=move |event| write_state.write().theme.title_colour = event.target().value()
+                    /></td>
+                </tr>
+                <tr>
+                    <td>Body size</td>
+                    <td><input type="number" min="1" max="10"
+                        prop:value=move || state.read().theme.body_size
+                        on:change:target=move |event| if let Ok(size) = event.target().value().parse() {
+                            write_state.write().theme.body_size = size;
+                        }
+                    /></td>
+                </tr>
+                <tr>
+                    <td>Body colour</td>
+                    <td><input type="color"
+                        prop:value=move || state.read().theme.body_colour.clone()
+                        on:change:target=move |event| write_state.write().theme.body_colour = event.target().value()
+                    /></td>
+                </tr>
+                <tr>
+                    <td>Background colour</td>
+                    <td><input type="color"
+                        prop:value=move || state.read().theme.background_colour.clone()
+                        on:change:target=move |event| write_state.write().theme.background_colour = event.target().value()
+                    /></td>
+                </tr>
+            </table>
+        </form>
     }
 }
 

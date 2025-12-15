@@ -21,6 +21,7 @@ use thiserror::Error;
 pub struct State {
     pub songs: BTreeMap<u32, Song>,
     pub playlists: BTreeMap<u32, Playlist>,
+    pub theme: Theme,
 }
 
 impl Default for State {
@@ -28,6 +29,7 @@ impl Default for State {
         Self {
             songs: Default::default(),
             playlists: [(0, Playlist::new("Playlist"))].into_iter().collect(),
+            theme: Default::default(),
         }
     }
 }
@@ -277,6 +279,27 @@ impl State {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Theme {
+    pub title_size: u32,
+    pub body_size: u32,
+    pub title_colour: String,
+    pub body_colour: String,
+    pub background_colour: String,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            title_size: 5,
+            body_size: 4,
+            title_colour: "#000000".to_string(),
+            body_colour: "#000000".to_string(),
+            background_colour: "#ffffff".to_string(),
+        }
+    }
+}
+
 fn push_lyric_entry_pages(
     lyric_entry_index: usize,
     lyric_entry: &LyricEntry,
@@ -462,7 +485,6 @@ mod tests {
     #[test]
     fn slides_text() {
         let state = State {
-            songs: BTreeMap::new(),
             playlists: [(
                 42,
                 Playlist {
@@ -475,6 +497,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            ..Default::default()
         };
         assert_eq!(
             state.slides(42),
@@ -578,6 +601,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            ..Default::default()
         };
         assert_eq!(
             state.slides(42),
@@ -745,6 +769,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            ..Default::default()
         };
         assert_eq!(
             state.slides(42),
