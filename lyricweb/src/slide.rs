@@ -7,6 +7,7 @@ use leptos::{
     ev::{Custom, message},
     prelude::*,
 };
+use leptos_meta::Style;
 use leptos_use::use_event_listener;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
@@ -19,7 +20,21 @@ use web_sys::{
 pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
     move || {
         let content = slide.read();
+        let theme = content.theme.clone();
         view! {
+            <Style>
+            ".slide {"
+                "background-color: " {theme.background_colour} ";"
+            "}"
+            ".slide h1 {"
+                "font-size:" {theme.heading_size}"cqi;"
+                "color: " {theme.heading_colour} ";"
+            "}"
+            ".slide p {"
+                "font-size:" {theme.body_size}"cqi;"
+                "color: " {theme.body_colour} ";"
+            "}"
+            </Style>
             <div class="slide">
             { content.title.as_ref().map(|title| {
                 view! {

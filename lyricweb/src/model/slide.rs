@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{Slide, SlideIndex, State, title_for_song};
+use crate::model::{Slide, SlideIndex, State, Theme, title_for_song};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
@@ -14,11 +14,13 @@ use serde::{Deserialize, Serialize};
 pub struct SlideContent {
     pub title: Option<String>,
     pub lines: Vec<SlideLine>,
+    pub theme: Theme,
 }
 
 impl SlideContent {
     pub fn for_index(state: &State, index: SlideIndex) -> Option<Self> {
         let slide = &state.slide(index)?;
+        let theme = state.theme.clone();
         match slide {
             Slide::SongStart { .. } => None,
             Slide::Lyrics {
@@ -27,7 +29,12 @@ impl SlideContent {
                 lines_index,
             } => {
                 let song = &state.songs[song_id];
-                Some(Self::song_page(song, *lyric_entry_index, *lines_index))
+                Some(Self::song_page(
+                    song,
+                    *lyric_entry_index,
+                    *lines_index,
+                    theme,
+                ))
             }
             Slide::Text(text) => Some(Self {
                 title: None,
@@ -35,11 +42,12 @@ impl SlideContent {
                     text: (*text).to_owned(),
                     ..Default::default()
                 }],
+                theme,
             }),
         }
     }
 
-    fn song_page(song: &Song, lyric_entry_index: usize, lines_index: usize) -> Self {
+    fn song_page(song: &Song, lyric_entry_index: usize, lines_index: usize, theme: Theme) -> Self {
         let item = &song.lyrics.lyrics[lyric_entry_index];
 
         let title = Some(title_for_song(song).to_owned());
@@ -88,7 +96,11 @@ impl SlideContent {
                 }
             };
 
-        Self { title, lines }
+        Self {
+            title,
+            lines,
+            theme,
+        }
     }
 }
 
