@@ -13,7 +13,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     Event, PresentationConnection, PresentationConnectionAvailableEvent,
-    PresentationConnectionCloseEvent, PresentationConnectionList,
+    PresentationConnectionCloseEvent, PresentationConnectionList, PresentationConnectionState,
 };
 
 #[component]
@@ -157,4 +157,7 @@ fn setup_connection(
             write_error.set(Some("terminate".to_string()));
         },
     );
+    if connection.state() == PresentationConnectionState::Connected {
+        connection.send_with_str("").unwrap();
+    }
 }

@@ -17,7 +17,7 @@ use crate::{
     songlist::SongList,
 };
 use leptos::{
-    ev::{Custom, change},
+    ev::{Custom, change, message},
     prelude::*,
     server::codee::string::{FromToStringCodec, JsonSerdeCodec, OptionCodec},
     task::spawn_local,
@@ -319,6 +319,12 @@ fn setup_presentation_request(
                     connection_clone.send_with_str(&data).unwrap();
                 },
             );
+
+            let connection_clone = connection.clone();
+            _ = use_event_listener(connection.clone(), message, move |_event| {
+                let data = serde_json::to_string(&*current_slide_content.read_untracked()).unwrap();
+                connection_clone.send_with_str(&data).unwrap();
+            });
 
             if connection.state() == PresentationConnectionState::Connected {
                 let data = serde_json::to_string(&*current_slide_content.read_untracked()).unwrap();
