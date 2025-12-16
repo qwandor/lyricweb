@@ -140,11 +140,12 @@ fn delete_playlist(
     write_current_slide.set(None);
     write_state.update(|state| {
         state.playlists.remove(&playlist_id);
-        if let Some((&first_id, _)) = state.playlists.first_key_value() {
-            write_current_playlist.set(Some(first_id));
-        } else {
-            write_current_playlist.set(None);
-        }
+        write_current_playlist.set(
+            state
+                .playlists
+                .first_key_value()
+                .map(|(&first_id, _)| first_id),
+        );
     });
 }
 
