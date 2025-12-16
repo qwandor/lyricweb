@@ -63,7 +63,6 @@ select[size] {
 }
 
 .slide {
-  background-color: #ffffff;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -71,18 +70,6 @@ select[size] {
   display: flow-root;
   contain: strict;
   container-type: size;
-}
-
-.slide h1 {
-  font-size: 5cqi;
-}
-
-.slide h2 {
-  font-size: 4cqi;
-}
-
-.slide p {
-  font-size: 4cqi;
 }
 
 h1,

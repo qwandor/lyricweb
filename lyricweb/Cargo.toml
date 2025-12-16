@@ -16,6 +16,7 @@ gloo-net = { version = "0.6.0", features = ["http"] }
 gloo-utils = "0.2.0"
 leptos = { version = "0.8.14", features = ["csr"] }
 leptos_router = "0.8.10"
+leptos_meta = "0.8.5"
 leptos-use = "0.16.3"
 openlyrics = { version = "0.1.1", path = "../openlyrics" }
 quick-xml = { version = "0.38.4", features = ["serialize"] }

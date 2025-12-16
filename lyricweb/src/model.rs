@@ -19,8 +19,12 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct State {
+    #[serde(default)]
     pub songs: BTreeMap<u32, Song>,
+    #[serde(default)]
     pub playlists: BTreeMap<u32, Playlist>,
+    #[serde(default)]
+    pub theme: Theme,
 }
 
 impl Default for State {
@@ -28,6 +32,7 @@ impl Default for State {
         Self {
             songs: Default::default(),
             playlists: [(0, Playlist::new("Playlist"))].into_iter().collect(),
+            theme: Default::default(),
         }
     }
 }
@@ -277,6 +282,35 @@ impl State {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Theme {
+    #[serde(default)]
+    pub heading_size: u32,
+    #[serde(default)]
+    pub body_size: u32,
+    #[serde(default)]
+    pub heading_colour: String,
+    #[serde(default)]
+    pub body_colour: String,
+    #[serde(default)]
+    pub background_colour: String,
+    #[serde(default)]
+    pub font_family: String,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            heading_size: 5,
+            body_size: 4,
+            heading_colour: "#000000".to_string(),
+            body_colour: "#000000".to_string(),
+            background_colour: "#ffffff".to_string(),
+            font_family: "sans-serif".to_string(),
+        }
+    }
+}
+
 fn push_lyric_entry_pages(
     lyric_entry_index: usize,
     lyric_entry: &LyricEntry,
@@ -325,6 +359,7 @@ fn push_lyric_entry_pages(
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Playlist {
     pub name: String,
+    #[serde(default)]
     pub entries: Vec<PlaylistEntry>,
 }
 
@@ -462,7 +497,6 @@ mod tests {
     #[test]
     fn slides_text() {
         let state = State {
-            songs: BTreeMap::new(),
             playlists: [(
                 42,
                 Playlist {
@@ -475,6 +509,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            ..Default::default()
         };
         assert_eq!(
             state.slides(42),
@@ -578,6 +613,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            ..Default::default()
         };
         assert_eq!(
             state.slides(42),
@@ -745,6 +781,7 @@ mod tests {
             )]
             .into_iter()
             .collect(),
+            ..Default::default()
         };
         assert_eq!(
             state.slides(42),
