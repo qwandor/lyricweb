@@ -2,6 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+mod editsong;
 mod files;
 mod import_export;
 mod model;
@@ -10,6 +11,7 @@ mod slide;
 mod songlist;
 
 use crate::{
+    editsong::EditSong,
     import_export::{export, import, import_url},
     model::{PlaylistEntry, SlideIndex, State, slide::SlideContent},
     playlist::Playlist,
@@ -120,6 +122,8 @@ fn Controller(
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
 
+    let (edit_song, write_edit_song) = signal(None);
+
     let presentation_window = RefCell::new(None);
 
     let (presentation_displays_available, write_presentation_displays_available) = signal(false);
@@ -159,7 +163,7 @@ fn Controller(
                     <p id="output">{ output }</p>
                     <p id="error">{ error }</p>
                 </div>
-                <SongList state write_state current_playlist />
+                <SongList state write_state current_playlist write_edit_song />
                 <div class="button-row">
                     <form class="wide" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
                         <input type="text" node_ref=text_entry />
@@ -168,7 +172,12 @@ fn Controller(
                 </div>
             </div>
             <div class="column">
-                <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
+                <Show when=move || edit_song.get().is_some()
+                fallback=move || view! {
+                    <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
+                }>
+                <EditSong state write_state edit_song write_edit_song/>
+                </Show>
             </div>
             <div class="column">
                 <form>

@@ -12,6 +12,7 @@ pub fn SongList(
     state: Signal<State>,
     write_state: WriteSignal<State>,
     current_playlist: Signal<Option<u32>>,
+    write_edit_song: WriteSignal<Option<u32>>,
 ) -> impl IntoView {
     let no_current_playlist = move || current_playlist.get().is_none();
     let (selected_song, write_selected_song) = signal(None);
@@ -35,6 +36,7 @@ pub fn SongList(
             <SongInfo state selected_song />
             <div class="button-row">
                 <input type="button" value="Remove" on:click=move |_| remove_from_song_list(selected_song, write_state) />
+                <input type="button" value="Edit" on:click=move |_| write_edit_song.set(selected_song.get()) />
                 <input type="submit" value="Add to playlist" disabled=no_current_playlist />
             </div>
         </form>
