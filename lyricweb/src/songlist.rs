@@ -4,7 +4,7 @@
 
 use crate::model::{PlaylistEntry, State, first_line, song_matches_filter, title_for_song};
 use leptos::prelude::*;
-use web_sys::{HtmlSelectElement, SubmitEvent};
+use web_sys::SubmitEvent;
 
 /// List of all available songs.
 #[component]
@@ -13,15 +13,14 @@ pub fn SongList(
     write_state: WriteSignal<State>,
     current_playlist: Signal<Option<u32>>,
 ) -> impl IntoView {
-    let song_list = NodeRef::new();
     let no_current_playlist = move || current_playlist.get().is_none();
     let (selected_song, write_selected_song) = signal(None);
     let (filter, write_filter) = signal(String::new());
 
     view! {
-        <form class="tall" on:submit=move |event| add_song_to_playlist(event, song_list.get().unwrap(), current_playlist, write_state)>
+        <form class="tall" on:submit=move |event| add_song_to_playlist(event, selected_song, current_playlist, write_state)>
             <input type="text" placeholder="Search" on:input:target=move |event| write_filter.set(event.target().value()) />
-            <select size="5" id="song-list" node_ref=song_list on:change:target=move |event| {
+            <select size="5" id="song-list" on:change:target=move |event| {
                 write_selected_song.set(event.target().value().parse().ok());
             }>
                 {move || {
@@ -35,7 +34,7 @@ pub fn SongList(
             </select>
             <SongInfo state selected_song />
             <div class="button-row">
-                <input type="button" value="Remove" on:click=move |_| remove_from_song_list(song_list.get().unwrap(), write_state) />
+                <input type="button" value="Remove" on:click=move |_| remove_from_song_list(selected_song, write_state) />
                 <input type="submit" value="Add to playlist" disabled=no_current_playlist />
             </div>
         </form>
@@ -75,8 +74,8 @@ fn SongInfo(state: Signal<State>, selected_song: ReadSignal<Option<u32>>) -> imp
 }
 
 /// Removes the selected song from the song database.
-fn remove_from_song_list(song_list: HtmlSelectElement, write_state: WriteSignal<State>) {
-    let Ok(song_id) = song_list.value().parse() else {
+fn remove_from_song_list(selected_song: ReadSignal<Option<u32>>, write_state: WriteSignal<State>) {
+    let Some(song_id) = selected_song.get() else {
         return;
     };
 
@@ -87,13 +86,13 @@ fn remove_from_song_list(song_list: HtmlSelectElement, write_state: WriteSignal<
 
 fn add_song_to_playlist(
     event: SubmitEvent,
-    song_list: HtmlSelectElement,
+    selected_song: ReadSignal<Option<u32>>,
     current_playlist: Signal<Option<u32>>,
     write_state: WriteSignal<State>,
 ) {
     event.prevent_default();
 
-    let Ok(song_id) = song_list.value().parse() else {
+    let Some(song_id) = selected_song.get() else {
         return;
     };
     let Some(current_playlist) = current_playlist.get() else {
