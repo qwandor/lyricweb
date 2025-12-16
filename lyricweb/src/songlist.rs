@@ -48,30 +48,26 @@ pub fn SongList(
 fn SongInfo(state: Signal<State>, selected_song: ReadSignal<Option<u32>>) -> impl IntoView {
     move || {
         let state = state.read();
-        if let Some(song_id) = selected_song.get()
-            && let Some(song) = state.songs.get(&song_id)
-        {
-            Some(view! {
-                <div>
-                <h2>{title_for_song(&song).to_owned()}</h2>
-                <p>
-                    "Author: "
-                    {song.properties.authors.authors.iter().map(|author| {
-                        let author_name = &author.name;
-                        if let Some(author_type) = &author.author_type {
-                            format!("{author_name} ({author_type})")
-                        } else {
-                            format!("{author_name}")
-                        }
-                    }).collect::<Vec<_>>().join(", ") }
-                    <br/>
-                    "First line: " {first_line(&song, 0, 0)}
-                </p>
-                </div>
-            })
-        } else {
-            None
-        }
+        let song_id = selected_song.get()?;
+        let song = state.songs.get(&song_id)?;
+        Some(view! {
+            <div>
+            <h2>{title_for_song(&song).to_owned()}</h2>
+            <p>
+                "Author: "
+                {song.properties.authors.authors.iter().map(|author| {
+                    let author_name = &author.name;
+                    if let Some(author_type) = &author.author_type {
+                        format!("{author_name} ({author_type})")
+                    } else {
+                        format!("{author_name}")
+                    }
+                }).collect::<Vec<_>>().join(", ") }
+                <br/>
+                "First line: " {first_line(&song, 0, 0)}
+            </p>
+            </div>
+        })
     }
 }
 
