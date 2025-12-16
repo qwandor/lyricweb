@@ -72,6 +72,13 @@ select[size] {
   container-type: size;
 }
 
+.slide p,
+.slide h1 {
+  margin-left: 3cqi;
+  margin-right: 3cqi;
+  margin-top: 2cqi;
+}
+
 h1,
 h2 {
   margin-top: 0.1em;
