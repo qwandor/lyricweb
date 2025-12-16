@@ -138,7 +138,6 @@ fn setup_connection(
         Custom::new("connect"),
         move |event: Event| {
             gloo_console::log!(event);
-            write_error.set(Some("connect".to_string()));
         },
     );
     _ = use_event_listener(
