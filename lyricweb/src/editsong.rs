@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{State, title_for_song};
+use crate::model::{State, lyrics_as_text, title_for_song};
 use leptos::prelude::*;
 use web_sys::{HtmlInputElement, SubmitEvent};
 
@@ -17,18 +17,40 @@ pub fn EditSong(
         let state = state.read();
         let song_id = edit_song.get()?;
         let song = state.songs.get(&song_id)?;
+        let authors = &song.properties.authors.authors;
+        let verse_order = song
+            .properties
+            .verse_order
+            .as_deref()
+            .unwrap_or_default()
+            .to_owned();
+        let lyrics_text = lyrics_as_text(&song);
+
         let title = NodeRef::new();
+        let verseorder = NodeRef::new();
+        let lyrics = NodeRef::new();
         Some(view! {
             <h2>"Edit song"</h2>
-            <form on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap())>
+            <form class="tall" on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap())>
                 <table>
                     <tr>
-                        <td>Title</td>
-                        <td><input type="text" node_ref=title prop:value=title_for_song(&song).to_owned()/></td>
+                        <td><label for="title">Title</label></td>
+                        <td><input type="text" id="title" node_ref=title prop:value=title_for_song(&song).to_owned()/></td>
+                    </tr>
+                    <tr>
+                        <td><label for="author">Author</label></td>
+                        <td><input type="text" id="author" prop:value=authors[0].name.to_owned()/></td>
+                    </tr>
+                    <tr>
+                        <td><label for="verseorder">Verse order</label></td>
+                        <td><input type="text" id="verseorder" node_ref=verseorder prop:value=verse_order/></td>
                     </tr>
                 </table>
-                <input type="submit" value="Save"/>
-                <input type="button" value="Close" on:click=move |_| write_edit_song.set(None) />
+                <textarea class="tall" node_ref=lyrics prop:value=lyrics_text></textarea>
+                <div class="button-row">
+                    <input type="submit" value="Save"/>
+                    <input type="button" value="Close" on:click=move |_| write_edit_song.set(None) />
+                </div>
             </form>
         })
     }

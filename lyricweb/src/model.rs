@@ -11,7 +11,7 @@ use openlyrics::{
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    fmt::{self, Display, Formatter},
+    fmt::{self, Display, Formatter, Write},
     num::ParseIntError,
     str::FromStr,
 };
@@ -429,6 +429,25 @@ pub fn first_line(song: &Song, lyric_entry_index: usize, lines_index: usize) -> 
     } else {
         None
     }
+}
+
+/// Returns the full lyrics of the song as a single string, for editing.
+pub fn lyrics_as_text(song: &Song) -> String {
+    let mut text = String::new();
+    for lyric_entry in &song.lyrics.lyrics {
+        if let LyricEntry::Verse { name, lines, .. } = lyric_entry {
+            if !text.is_empty() {
+                writeln!(&mut text).unwrap();
+            }
+            writeln!(&mut text, "{name}:").unwrap();
+            for lines_entry in lines {
+                for line in simplify_contents(&lines_entry.contents) {
+                    writeln!(&mut text, "{line}").unwrap();
+                }
+            }
+        }
+    }
+    text
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

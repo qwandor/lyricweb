@@ -46,6 +46,13 @@ form.tall {
   flex: 2;
 }
 
+td input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+textarea {
+  flex: 1;
+}
 select[size] {
   flex: 1;
 }
