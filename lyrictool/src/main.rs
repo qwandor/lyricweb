@@ -2,8 +2,15 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+use abc_parser::{
+    abc::tune_book,
+    datatypes::{
+        Comment, HeaderLine, IgnoredLine, InfoField, LyricLine, LyricSymbol, TuneBook, TuneLine,
+    },
+};
 use clap::{Parser, ValueEnum};
 use eyre::{OptionExt, Report, eyre};
+use log::info;
 use musicxml::{
     datatypes::Syllabic,
     elements::{LyricContents, MeasureElement, PartElement, ScorePartwise},
@@ -11,13 +18,13 @@ use musicxml::{
 };
 use openlyrics::{
     simplify_contents,
-    types::{Author, Lines, LyricEntry, Lyrics, Properties, Song, Title, VerseContent},
+    types::{Author, Lines, LyricEntry, Lyrics, Properties, Song, Theme, Title, VerseContent},
 };
 use quick_xml::de::from_reader;
 use std::{
     collections::BTreeMap,
     fmt::Debug,
-    fs::File,
+    fs::{File, read_to_string},
     io::BufReader,
     path::{Path, PathBuf},
 };
@@ -39,6 +46,10 @@ fn main() -> Result<(), Report> {
 /// Reads from the given file in the given format, and converts it to OpenLyrics format.
 fn read_and_convert(path: &Path, format: Format) -> Result<Song, Report> {
     Ok(match format {
+        Format::Abc => {
+            let tunebook = tune_book(&read_to_string(path)?)?;
+            tunebook_to_open_lyrics(&tunebook)
+        }
         Format::MusicXml => {
             let score =
                 read_score_partwise(path.to_str().ok_or_eyre("Path is not a valid string")?)
@@ -62,6 +73,7 @@ enum Args {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 enum Format {
+    Abc,
     MusicXml,
     OpenLyrics,
 }
@@ -215,6 +227,141 @@ fn lines_to_open_lyrics(verse_lyrics: Vec<String>) -> Lines {
     Lines {
         contents,
         ..Default::default()
+    }
+}
+
+fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
+    let mut song = Song::default();
+    for comment in &tunebook.comments {
+        if let IgnoredLine::Comment(Comment::CommentLine(_, comment)) = comment {
+            if let Some((first, rest)) = comment.split_once(' ') {
+                match first {
+                    "OHAUTHOR" => {
+                        song.properties
+                            .authors
+                            .authors
+                            .extend(abc_author("words", rest));
+                    }
+                    "OHCOMPOSER" | "OHARRANGER" => {
+                        song.properties
+                            .authors
+                            .authors
+                            .extend(abc_author("music", rest));
+                    }
+                    "OHTRANSLATOR" => {
+                        song.properties
+                            .authors
+                            .authors
+                            .extend(abc_author("translation", rest));
+                    }
+                    "OHCATEGORY" => {
+                        song.properties.themes.themes.push(Theme {
+                            title: rest.to_lowercase(),
+                            ..Default::default()
+                        });
+                    }
+                    "OHTOPICS" => {
+                        // TODO: Parse and convert to themes.
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    if let Some(tune) = tunebook.tunes.get(0) {
+        for header_line in &tune.header.lines {
+            if let HeaderLine::Field(InfoField(name, value), _) = header_line {
+                let value = value.trim();
+                info!("{name}: {value:?}");
+                match name {
+                    'T' => {
+                        song.properties.titles.titles.push(Title {
+                            title: value.to_string(),
+                            ..Default::default()
+                        });
+                    }
+                    'M' => {
+                        song.properties.time_signature = Some(value.to_string());
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        if let Some(body) = &tune.body {
+            let mut verses = vec![];
+            let mut verse = 0;
+            for line in &body.lines {
+                match line {
+                    TuneLine::Music(_) => {
+                        verse = 0;
+                    }
+                    TuneLine::Lyric(lyric_line) => {
+                        let lyric = lyric_line_to_string(lyric_line);
+                        if verses.len() < verse + 1 {
+                            verses.push(Vec::new());
+                        }
+                        verses[verse].push(lyric);
+                        verse += 1;
+                    }
+                    TuneLine::Symbol(_) => {}
+                    TuneLine::Comment(_) => {}
+                }
+            }
+            song.lyrics.lyrics = verses
+                .into_iter()
+                .enumerate()
+                .map(|(i, verse)| {
+                    let mut contents = Vec::new();
+                    for (i, line) in verse.into_iter().enumerate() {
+                        if i != 0 {
+                            contents.push(VerseContent::Br);
+                        }
+                        contents.push(VerseContent::Text(line));
+                    }
+                    LyricEntry::Verse {
+                        name: format!("v{}", i + 1),
+                        lines: vec![Lines {
+                            contents,
+                            ..Default::default()
+                        }],
+                        lang: None,
+                        translit: None,
+                    }
+                })
+                .collect();
+        }
+    }
+
+    song
+}
+
+fn lyric_line_to_string(lyric_line: &LyricLine) -> String {
+    let mut line = String::new();
+    for symbol in &lyric_line.symbols {
+        match symbol {
+            LyricSymbol::Syllable(syllable) => {
+                line += syllable;
+            }
+            LyricSymbol::Space(_) => {
+                line += " ";
+            }
+            LyricSymbol::SymbolAlignment(_) => {}
+        }
+    }
+    line.trim().to_string()
+}
+
+fn abc_author(author_type: &str, name: &str) -> Option<Author> {
+    if name == "none" {
+        None
+    } else {
+        Some(Author {
+            author_type: Some(author_type.to_string()),
+            lang: None,
+            name: name.to_string(),
+        })
     }
 }
 
