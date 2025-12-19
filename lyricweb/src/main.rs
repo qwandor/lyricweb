@@ -215,7 +215,7 @@ fn ThemeSettings(state: Signal<State>, write_state: WriteSignal<State>) -> impl 
             <table>
                 <tr>
                     <td>Heading size</td>
-                    <td><input type="number" min="1" max="10"
+                    <td><input type="number" min="10" max="100" step="5"
                         prop:value=move || state.read().theme.heading_size
                         on:change:target=move |event| if let Ok(heading_size) = event.target().value().parse() {
                             write_state.write().theme.heading_size = heading_size;
@@ -231,7 +231,7 @@ fn ThemeSettings(state: Signal<State>, write_state: WriteSignal<State>) -> impl 
                 </tr>
                 <tr>
                     <td>Body size</td>
-                    <td><input type="number" min="1" max="10"
+                    <td><input type="number" min="10" max="100" step="5"
                         prop:value=move || state.read().theme.body_size
                         on:change:target=move |event| if let Ok(size) = event.target().value().parse() {
                             write_state.write().theme.body_size = size;
