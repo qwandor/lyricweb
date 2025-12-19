@@ -66,7 +66,7 @@ impl SlideContent {
                         });
                     }
 
-                    let mut before_first_line = if name.starts_with('v') {
+                    let mut before_first_line = if name.starts_with('v') && lines_index == 0 {
                         Some(format!("{}. ", &name[1..]))
                     } else {
                         None
