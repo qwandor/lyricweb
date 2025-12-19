@@ -4,7 +4,7 @@
 
 use openlyrics::{
     simplify_contents,
-    types::{Author, LyricEntry, Song},
+    types::{Author, Lines, LyricEntry, Song, VerseContent},
 };
 use std::fmt::Write;
 
@@ -41,7 +41,15 @@ pub fn lyrics_as_text(song: &Song) -> String {
                 writeln!(&mut text).unwrap();
             }
             writeln!(&mut text, "{name}:").unwrap();
+
+            let mut first_lines = true;
             for lines_entry in lines {
+                if first_lines {
+                    first_lines = false;
+                } else {
+                    writeln!(&mut text).unwrap();
+                }
+
                 for line in simplify_contents(&lines_entry.contents) {
                     writeln!(&mut text, "{line}").unwrap();
                 }
@@ -49,6 +57,59 @@ pub fn lyrics_as_text(song: &Song) -> String {
         }
     }
     text
+}
+
+/// Sets the lyrics of the given song by parsing a single string, of the format returned by
+/// `lyrics_as_text`.
+pub fn set_lyrics_from_text(song: &mut Song, text: &str) {
+    let mut lines = text.lines().peekable();
+    let mut lyrics = Vec::new();
+    while let Some(line) = lines.peek() {
+        let line = line.trim();
+        let verse_name = if line.ends_with(':') {
+            lines.next();
+            line.trim_end_matches(':')
+        } else {
+            ""
+        };
+
+        // A verse may have several pages of lines.
+        let mut verse_lines = Vec::new();
+        while let Some(line) = lines.peek()
+            && !line.trim().ends_with(':')
+        {
+            verse_lines.push(parse_lines(&mut lines));
+        }
+
+        lyrics.push(LyricEntry::Verse {
+            name: verse_name.to_string(),
+            lang: None,
+            translit: None,
+            lines: verse_lines,
+        });
+    }
+    song.lyrics.lyrics = lyrics;
+}
+
+fn parse_lines<'a>(lines: &mut impl Iterator<Item = &'a str>) -> Lines {
+    let mut contents = Vec::new();
+    for line in lines {
+        let line = line.trim();
+        if line.is_empty() {
+            break;
+        }
+
+        if !contents.is_empty() {
+            contents.push(VerseContent::Br);
+        }
+        contents.push(VerseContent::Text(line.to_string()));
+    }
+    Lines {
+        break_optional: None,
+        part: None,
+        repeat: None,
+        contents,
+    }
 }
 
 /// Returns the authors of the given song as a single string, for displaying or editing.
@@ -92,4 +153,34 @@ pub fn set_authors_from_string(song: &mut Song, authors: &str) {
             }
         })
         .collect();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_lyrics_and_back() {
+        let mut song = Song::default();
+
+        let text = "\
+v1:
+Some line
+Another line.
+
+More of verse 1
+
+c:
+Chorus, I guess
+
+v2:
+Verse 2 line
+
+Some more lines
+Line
+";
+
+        set_lyrics_from_text(&mut song, text);
+        assert_eq!(lyrics_as_text(&song), text);
+    }
 }

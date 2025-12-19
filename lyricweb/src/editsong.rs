@@ -4,10 +4,13 @@
 
 use crate::model::{
     State,
-    helpers::{authors_as_string, lyrics_as_text, set_authors_from_string, title_for_song},
+    helpers::{
+        authors_as_string, lyrics_as_text, set_authors_from_string, set_lyrics_from_text,
+        title_for_song,
+    },
 };
 use leptos::prelude::*;
-use web_sys::{HtmlInputElement, SubmitEvent};
+use web_sys::{HtmlInputElement, HtmlTextAreaElement, SubmitEvent};
 
 #[component]
 pub fn EditSong(
@@ -30,12 +33,12 @@ pub fn EditSong(
 
         let title = NodeRef::new();
         let authors = NodeRef::new();
-        let lyrics = NodeRef::new();
         let verseorder = NodeRef::new();
+        let lyrics = NodeRef::new();
         Some(view! {
             <h2>"Edit song"</h2>
             <form class="tall"
-                on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap(), authors.get().unwrap(), verseorder.get().unwrap())>
+                on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap(), authors.get().unwrap(), verseorder.get().unwrap(), lyrics.get().unwrap())>
                 <table>
                     <tr>
                         <td><label for="title">Title</label></td>
@@ -67,11 +70,13 @@ fn save_song(
     title: HtmlInputElement,
     authors: HtmlInputElement,
     verseorder: HtmlInputElement,
+    lyrics: HtmlTextAreaElement,
 ) {
     event.prevent_default();
     let title = title.value().trim().to_string();
     let authors = authors.value();
     let verseorder = verseorder.value().trim().to_string();
+    let lyrics = lyrics.value();
 
     write_state.update(|state| {
         let Some(song) = state.songs.get_mut(&song_id) else {
@@ -85,5 +90,6 @@ fn save_song(
         } else {
             Some(verseorder)
         };
+        set_lyrics_from_text(song, &lyrics);
     });
 }
