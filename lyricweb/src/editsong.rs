@@ -2,7 +2,10 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{State, lyrics_as_text, title_for_song};
+use crate::model::{
+    State,
+    helpers::{lyrics_as_text, title_for_song},
+};
 use leptos::prelude::*;
 use web_sys::{HtmlInputElement, SubmitEvent};
 

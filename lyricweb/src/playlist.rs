@@ -2,7 +2,10 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{Playlist, Slide, SlideIndex, State, first_line, title_for_song};
+use crate::model::{
+    Playlist, Slide, SlideIndex, State,
+    helpers::{first_line, title_for_song},
+};
 use leptos::prelude::*;
 use web_sys::{HtmlInputElement, SubmitEvent};
 

@@ -2,7 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{Slide, SlideIndex, State, Theme, title_for_song};
+use crate::model::{Slide, SlideIndex, State, Theme, helpers::title_for_song};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
