@@ -4,7 +4,7 @@
 
 use crate::model::{
     State,
-    helpers::{lyrics_as_text, title_for_song},
+    helpers::{authors_as_string, lyrics_as_text, set_authors_from_string, title_for_song},
 };
 use leptos::prelude::*;
 use web_sys::{HtmlInputElement, SubmitEvent};
@@ -20,7 +20,6 @@ pub fn EditSong(
         let state = state.read();
         let song_id = edit_song.get()?;
         let song = state.songs.get(&song_id)?;
-        let authors = &song.properties.authors.authors;
         let verse_order = song
             .properties
             .verse_order
@@ -30,11 +29,13 @@ pub fn EditSong(
         let lyrics_text = lyrics_as_text(&song);
 
         let title = NodeRef::new();
-        let verseorder = NodeRef::new();
+        let authors = NodeRef::new();
         let lyrics = NodeRef::new();
+        let verseorder = NodeRef::new();
         Some(view! {
             <h2>"Edit song"</h2>
-            <form class="tall" on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap())>
+            <form class="tall"
+                on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap(), authors.get().unwrap(), verseorder.get().unwrap())>
                 <table>
                     <tr>
                         <td><label for="title">Title</label></td>
@@ -42,7 +43,7 @@ pub fn EditSong(
                     </tr>
                     <tr>
                         <td><label for="author">Author</label></td>
-                        <td><input type="text" id="author" prop:value=authors[0].name.to_owned()/></td>
+                        <td><input type="text" id="author" node_ref=authors prop:value=authors_as_string(&song)/></td>
                     </tr>
                     <tr>
                         <td><label for="verseorder">Verse order</label></td>
@@ -64,9 +65,13 @@ fn save_song(
     write_state: WriteSignal<State>,
     song_id: u32,
     title: HtmlInputElement,
+    authors: HtmlInputElement,
+    verseorder: HtmlInputElement,
 ) {
     event.prevent_default();
-    let title = title.value();
+    let title = title.value().trim().to_string();
+    let authors = authors.value();
+    let verseorder = verseorder.value().trim().to_string();
 
     write_state.update(|state| {
         let Some(song) = state.songs.get_mut(&song_id) else {
@@ -74,5 +79,11 @@ fn save_song(
         };
 
         song.properties.titles.titles[0].title = title;
+        set_authors_from_string(song, &authors);
+        song.properties.verse_order = if verseorder.is_empty() {
+            None
+        } else {
+            Some(verseorder)
+        };
     });
 }

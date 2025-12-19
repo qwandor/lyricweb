@@ -4,7 +4,7 @@
 
 use openlyrics::{
     simplify_contents,
-    types::{LyricEntry, Song},
+    types::{Author, LyricEntry, Song},
 };
 use std::fmt::Write;
 
@@ -32,7 +32,7 @@ pub fn first_line(song: &Song, lyric_entry_index: usize, lines_index: usize) -> 
     }
 }
 
-/// Returns the full lyrics of the song as a single string, for editing.
+/// Returns the full lyrics of the given song as a single string, for editing.
 pub fn lyrics_as_text(song: &Song) -> String {
     let mut text = String::new();
     for lyric_entry in &song.lyrics.lyrics {
@@ -49,4 +49,47 @@ pub fn lyrics_as_text(song: &Song) -> String {
         }
     }
     text
+}
+
+/// Returns the authors of the given song as a single string, for displaying or editing.
+pub fn authors_as_string(song: &Song) -> String {
+    song.properties
+        .authors
+        .authors
+        .iter()
+        .map(|author| {
+            let author_name = &author.name;
+            if let Some(author_type) = &author.author_type {
+                format!("{author_name} ({author_type})")
+            } else {
+                author_name.clone()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// Sets the authors of the given song from a string of the format returned by `authors_as_string`.
+pub fn set_authors_from_string(song: &mut Song, authors: &str) {
+    song.properties.authors.authors = authors
+        .split(',')
+        .map(|author| {
+            let author = author.trim();
+            if let Some((name, rest)) = author.split_once('(')
+                && rest.ends_with(')')
+            {
+                Author {
+                    author_type: Some(rest.trim_end_matches(')').trim().to_string()),
+                    lang: None,
+                    name: name.trim().to_string(),
+                }
+            } else {
+                Author {
+                    author_type: None,
+                    lang: None,
+                    name: author.to_string(),
+                }
+            }
+        })
+        .collect();
 }

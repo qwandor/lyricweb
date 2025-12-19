@@ -4,7 +4,7 @@
 
 use crate::model::{
     PlaylistEntry, State,
-    helpers::{first_line, song_matches_filter, title_for_song},
+    helpers::{authors_as_string, first_line, song_matches_filter, title_for_song},
 };
 use leptos::prelude::*;
 use web_sys::SubmitEvent;
@@ -58,14 +58,7 @@ fn SongInfo(state: Signal<State>, selected_song: ReadSignal<Option<u32>>) -> imp
             <h2>{title_for_song(&song).to_owned()}</h2>
             <p>
                 "Author: "
-                {song.properties.authors.authors.iter().map(|author| {
-                    let author_name = &author.name;
-                    if let Some(author_type) = &author.author_type {
-                        format!("{author_name} ({author_type})")
-                    } else {
-                        format!("{author_name}")
-                    }
-                }).collect::<Vec<_>>().join(", ") }
+                {authors_as_string(&song)}
                 <br/>
                 "First line: " {first_line(&song, 0, 0)}
             </p>
