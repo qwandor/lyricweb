@@ -279,6 +279,8 @@ impl State {
                 self.add_playlist(playlist);
             }
         }
+
+        self.theme = other.theme.clone();
     }
 }
 
