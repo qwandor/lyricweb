@@ -2,6 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+use abc_parser::{abc::tune_book, datatypes::TuneBook};
 use clap::{Parser, ValueEnum};
 use eyre::{OptionExt, Report, eyre};
 use musicxml::{
@@ -17,7 +18,7 @@ use quick_xml::de::from_reader;
 use std::{
     collections::BTreeMap,
     fmt::Debug,
-    fs::File,
+    fs::{File, read_to_string},
     io::BufReader,
     path::{Path, PathBuf},
 };
@@ -39,6 +40,10 @@ fn main() -> Result<(), Report> {
 /// Reads from the given file in the given format, and converts it to OpenLyrics format.
 fn read_and_convert(path: &Path, format: Format) -> Result<Song, Report> {
     Ok(match format {
+        Format::Abc => {
+            let tunebook = tune_book(&read_to_string(path)?)?;
+            tunebook_to_open_lyrics(&tunebook)
+        }
         Format::MusicXml => {
             let score =
                 read_score_partwise(path.to_str().ok_or_eyre("Path is not a valid string")?)
@@ -62,6 +67,7 @@ enum Args {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 enum Format {
+    Abc,
     MusicXml,
     OpenLyrics,
 }
@@ -216,6 +222,12 @@ fn lines_to_open_lyrics(verse_lyrics: Vec<String>) -> Lines {
         contents,
         ..Default::default()
     }
+}
+
+fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
+    println!("{tunebook:#?}");
+    let mut song = Song::default();
+    song
 }
 
 #[cfg(test)]
