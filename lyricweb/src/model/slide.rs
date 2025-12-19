@@ -50,7 +50,11 @@ impl SlideContent {
     fn song_page(song: &Song, lyric_entry_index: usize, lines_index: usize, theme: Theme) -> Self {
         let item = &song.lyrics.lyrics[lyric_entry_index];
 
-        let title = Some(title_for_song(song).to_owned());
+        let title = if lyric_entry_index == 0 && lines_index == 0 {
+            Some(title_for_song(song).to_owned())
+        } else {
+            None
+        };
 
         let lines =
             match item {
