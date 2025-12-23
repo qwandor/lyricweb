@@ -86,6 +86,11 @@ select[size] {
   margin-top: 2cqi;
 }
 
+.slide p.credit {
+  text-align: right;
+  font-style: italic;
+}
+
 h1,
 h2 {
   margin-top: 0.1em;

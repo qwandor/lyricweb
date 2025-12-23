@@ -35,6 +35,9 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
                 "font-size:" {theme.body_size as f32 / 10.0}"cqi;"
                 "color: " {theme.body_colour} ";"
             "}"
+            ".slide p.credit {"
+                "font-size:" {theme.body_size as f32 / 20.0} "cqi;"
+            "}"
             </Style>
             <div class="slide">
             { content.title.as_ref().map(|title| {
@@ -53,6 +56,13 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
                     }
                 } ).collect::<Vec<_>>() }
             </p>
+            {
+                content.credit.as_ref().map(|credit| {
+                    view! {
+                        <p class="credit">{credit.clone()}</p>
+                    }
+                })
+            }
             </div>
         }
     }

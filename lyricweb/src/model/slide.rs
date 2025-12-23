@@ -2,7 +2,10 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{Slide, SlideIndex, State, Theme, helpers::title_for_song};
+use crate::model::{
+    Slide, SlideIndex, State, Theme,
+    helpers::{authors_as_string, title_for_song},
+};
 use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
@@ -14,6 +17,7 @@ use serde::{Deserialize, Serialize};
 pub struct SlideContent {
     pub title: Option<String>,
     pub lines: Vec<SlideLine>,
+    pub credit: Option<String>,
     pub theme: Theme,
 }
 
@@ -46,6 +50,7 @@ impl SlideContent {
                     text: (*text).to_owned(),
                     ..Default::default()
                 }],
+                credit: None,
                 theme,
             }),
         }
@@ -56,6 +61,16 @@ impl SlideContent {
 
         let title = if lyric_entry_index == 0 && lines_index == 0 {
             Some(title_for_song(song).to_owned())
+        } else {
+            None
+        };
+
+        let credit = if lyric_entry_index == song.lyrics.lyrics.len() - 1
+            && match item {
+                LyricEntry::Verse { lines, .. } => lines_index == lines.len() - 1,
+                LyricEntry::Instrument { .. } => true,
+            } {
+            Some(authors_as_string(song))
         } else {
             None
         };
@@ -107,6 +122,7 @@ impl SlideContent {
         Self {
             title,
             lines,
+            credit,
             theme,
         }
     }
