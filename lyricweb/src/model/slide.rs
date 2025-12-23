@@ -20,6 +20,10 @@ pub struct SlideContent {
 impl SlideContent {
     pub fn for_index(state: &State, index: SlideIndex) -> Option<Self> {
         let slide = &state.slide(index)?;
+        Self::for_slide(state, slide)
+    }
+
+    pub fn for_slide(state: &State, slide: &Slide) -> Option<Self> {
         let theme = state.theme.clone();
         match slide {
             Slide::SongStart { .. } => None,

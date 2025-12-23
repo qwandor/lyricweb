@@ -2,12 +2,16 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-use crate::model::{
-    State,
-    helpers::{
-        authors_as_string, lyrics_as_text, set_authors_from_string, set_lyrics_from_text,
-        title_for_song,
+use crate::{
+    model::{
+        State,
+        helpers::{
+            authors_as_string, lyrics_as_text, set_authors_from_string, set_lyrics_from_text,
+            title_for_song,
+        },
+        slide::SlideContent,
     },
+    slide::Slide,
 };
 use leptos::prelude::*;
 use web_sys::{HtmlInputElement, HtmlTextAreaElement, SubmitEvent};
@@ -60,6 +64,28 @@ pub fn EditSong(
                 </div>
             </form>
         })
+    }
+}
+
+#[component]
+pub fn PreviewSlides(state: Signal<State>, song_id: ReadSignal<Option<u32>>) -> impl IntoView {
+    move || {
+        let state = state.read();
+        let song_id = song_id.get()?;
+        let slides = state.slides_for_song(song_id);
+        Some(
+            slides
+                .into_iter()
+                .filter_map(|slide| {
+                    let slide_content = SlideContent::for_slide(&state, &slide)?;
+                    Some(view! {
+                        <div class="preview">
+                            <Slide slide=slide_content />
+                        </div>
+                    })
+                })
+                .collect::<Vec<_>>(),
+        )
     }
 }
 

@@ -11,7 +11,7 @@ mod slide;
 mod songlist;
 
 use crate::{
-    editsong::EditSong,
+    editsong::{EditSong, PreviewSlides},
     import_export::{export, import, import_url},
     model::{PlaylistEntry, SlideIndex, State, slide::SlideContent},
     playlist::Playlist,
@@ -30,7 +30,6 @@ use leptos_router::{
     path,
 };
 use leptos_use::{storage::use_local_storage, use_event_listener};
-use std::cell::RefCell;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -124,7 +123,7 @@ fn Controller(
 
     let (edit_song, write_edit_song) = signal(None);
 
-    let presentation_window = RefCell::new(None);
+    let presentation_window = StoredValue::new_local(None);
 
     let (presentation_displays_available, write_presentation_displays_available) = signal(false);
     let presentation_connection = RwSignal::new_local(None);
@@ -176,32 +175,37 @@ fn Controller(
                 fallback=move || view! {
                     <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
                 }>
-                <EditSong state write_state edit_song write_edit_song/>
+                    <EditSong state write_state edit_song write_edit_song/>
                 </Show>
             </div>
             <div class="column">
-                <form>
-                    <input type="button" value="Present in window" on:click=move |_| open_presentation(&mut presentation_window.borrow_mut())/>
-                    {move || {
-                        if presentation_connection.read().is_some() {
-                            view! {
-                                <input type="button" value="Stop presenting" on:click=move |_| show_error(close_external_presentation(presentation_connection), write_error)/>
-                            }.into_any()
-                        } else if presentation_displays_available.get() {
-                            view! {
-                                <input type="button" value="Present on external screen" on:click=move |_| {
-                                    spawn_show_error(open_external_presentation(presentation_request.read_value().clone()), write_error)
-                                } />
-                            }.into_any()
-                        } else {
-                            view! {}.into_any()
-                        }
-                    }}
-                </form>
-                <div class="preview">
-                    <Slide slide=current_slide_content/>
-                </div>
-                <ThemeSettings state write_state />
+                <Show when=move || edit_song.get().is_some()
+                fallback=move || view! {
+                    <form>
+                        <input type="button" value="Present in window" on:click=move |_| open_presentation(&mut presentation_window.write_value())/>
+                        {move || {
+                            if presentation_connection.read().is_some() {
+                                view! {
+                                    <input type="button" value="Stop presenting" on:click=move |_| show_error(close_external_presentation(presentation_connection), write_error)/>
+                                }.into_any()
+                            } else if presentation_displays_available.get() {
+                                view! {
+                                    <input type="button" value="Present on external screen" on:click=move |_| {
+                                        spawn_show_error(open_external_presentation(presentation_request.read_value().clone()), write_error)
+                                    } />
+                                }.into_any()
+                            } else {
+                                view! {}.into_any()
+                            }
+                        }}
+                    </form>
+                    <div class="preview">
+                        <Slide slide=current_slide_content/>
+                    </div>
+                    <ThemeSettings state write_state />
+                }>
+                    <PreviewSlides state song_id=edit_song />
+                </Show>
             </div>
         </div>
     }

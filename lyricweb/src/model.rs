@@ -182,6 +182,43 @@ impl State {
         }
     }
 
+    pub fn slides_for_song(&self, song_id: u32) -> Vec<Slide<'_>> {
+        let mut slides = Vec::new();
+        let song = &self.songs[&song_id];
+        slides.push(Slide::SongStart { song_id: song_id });
+        let mut page_index = 1;
+        if let Some(verse_order) = &song.properties.verse_order {
+            for verse in verse_order.split(' ') {
+                if let Some((lyric_entry_index, lyric_entry)) = song
+                    .lyrics
+                    .lyrics
+                    .iter()
+                    .enumerate()
+                    .find(|(_, lyric_entry)| lyric_entry.name() == verse)
+                {
+                    push_lyric_entry_slides(
+                        lyric_entry_index,
+                        lyric_entry,
+                        song_id,
+                        &mut slides,
+                        &mut page_index,
+                    );
+                }
+            }
+        } else {
+            for (lyric_entry_index, lyric_entry) in song.lyrics.lyrics.iter().enumerate() {
+                push_lyric_entry_slides(
+                    lyric_entry_index,
+                    lyric_entry,
+                    song_id,
+                    &mut slides,
+                    &mut page_index,
+                );
+            }
+        }
+        slides
+    }
+
     pub fn slides(&self, playlist_id: u32) -> Vec<(SlideIndex, Slide<'_>)> {
         let Some(playlist) = self.playlists.get(&playlist_id) else {
             return vec![];
@@ -352,6 +389,35 @@ fn push_lyric_entry_pages(
                     lines_index: 0,
                 },
             ));
+            *page_index += 1;
+        }
+    }
+}
+
+fn push_lyric_entry_slides(
+    lyric_entry_index: usize,
+    lyric_entry: &LyricEntry,
+    song_id: u32,
+    slides: &mut Vec<Slide>,
+    page_index: &mut usize,
+) {
+    match lyric_entry {
+        LyricEntry::Verse { lines, .. } => {
+            for lines_index in 0..lines.len() {
+                slides.push(Slide::Lyrics {
+                    song_id,
+                    lyric_entry_index,
+                    lines_index,
+                });
+                *page_index += 1;
+            }
+        }
+        LyricEntry::Instrument { .. } => {
+            slides.push(Slide::Lyrics {
+                song_id,
+                lyric_entry_index,
+                lines_index: 0,
+            });
             *page_index += 1;
         }
     }
