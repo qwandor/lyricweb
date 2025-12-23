@@ -7,6 +7,7 @@ use crate::model::{
     helpers::{authors_as_string, first_line, song_matches_filter, title_for_song},
 };
 use leptos::prelude::*;
+use openlyrics::types::{Song, Title};
 use web_sys::SubmitEvent;
 
 /// List of all available songs.
@@ -38,6 +39,7 @@ pub fn SongList(
             </select>
             <SongInfo state selected_song />
             <div class="button-row">
+                <input type="button" value="Add new" on:click=move |_| add_new_song(write_state, write_edit_song) />
                 <input type="button" value="Remove" on:click=move |_| remove_from_song_list(selected_song, write_state) />
                 <input type="button" value="Edit" on:click=move |_| write_edit_song.set(selected_song.get()) />
                 <input type="submit" value="Add to playlist" disabled=no_current_playlist />
@@ -65,6 +67,19 @@ fn SongInfo(state: Signal<State>, selected_song: ReadSignal<Option<u32>>) -> imp
             </div>
         })
     }
+}
+
+/// Adds a new empty song to the song database, and starts editing it.
+fn add_new_song(write_state: WriteSignal<State>, write_edit_song: WriteSignal<Option<u32>>) {
+    write_state.update(|state| {
+        let mut song = Song::default();
+        song.properties.titles.titles = vec![Title {
+            title: "New song".to_string(),
+            ..Default::default()
+        }];
+        let song_id = state.add_song(song);
+        write_edit_song.set(Some(song_id));
+    });
 }
 
 /// Removes the selected song from the song database.
