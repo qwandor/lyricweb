@@ -186,7 +186,6 @@ impl State {
         let mut slides = Vec::new();
         let song = &self.songs[&song_id];
         slides.push(Slide::SongStart { song_id: song_id });
-        let mut page_index = 1;
         if let Some(verse_order) = &song.properties.verse_order {
             for verse in verse_order.split(' ') {
                 if let Some((lyric_entry_index, lyric_entry)) = song
@@ -196,24 +195,12 @@ impl State {
                     .enumerate()
                     .find(|(_, lyric_entry)| lyric_entry.name() == verse)
                 {
-                    push_lyric_entry_slides(
-                        lyric_entry_index,
-                        lyric_entry,
-                        song_id,
-                        &mut slides,
-                        &mut page_index,
-                    );
+                    push_lyric_entry_pages(&mut slides, lyric_entry_index, lyric_entry, song_id);
                 }
             }
         } else {
             for (lyric_entry_index, lyric_entry) in song.lyrics.lyrics.iter().enumerate() {
-                push_lyric_entry_slides(
-                    lyric_entry_index,
-                    lyric_entry,
-                    song_id,
-                    &mut slides,
-                    &mut page_index,
-                );
+                push_lyric_entry_pages(&mut slides, lyric_entry_index, lyric_entry, song_id);
             }
         }
         slides
@@ -226,52 +213,19 @@ impl State {
         let mut slides = Vec::new();
         for (entry_index, entry) in playlist.entries.iter().enumerate() {
             match entry {
-                PlaylistEntry::Song { song_id } => {
-                    let song = &self.songs[song_id];
-                    slides.push((
-                        SlideIndex {
-                            playlist_id,
-                            entry_index,
-                            page_index: 0,
-                        },
-                        Slide::SongStart { song_id: *song_id },
-                    ));
-                    let mut page_index = 1;
-                    if let Some(verse_order) = &song.properties.verse_order {
-                        for verse in verse_order.split(' ') {
-                            if let Some((lyric_entry_index, lyric_entry)) = song
-                                .lyrics
-                                .lyrics
-                                .iter()
-                                .enumerate()
-                                .find(|(_, lyric_entry)| lyric_entry.name() == verse)
-                            {
-                                push_lyric_entry_pages(
-                                    lyric_entry_index,
-                                    lyric_entry,
+                &PlaylistEntry::Song { song_id } => {
+                    slides.extend(self.slides_for_song(song_id).into_iter().enumerate().map(
+                        |(page_index, slide)| {
+                            (
+                                SlideIndex {
                                     playlist_id,
                                     entry_index,
-                                    *song_id,
-                                    &mut slides,
-                                    &mut page_index,
-                                );
-                            }
-                        }
-                    } else {
-                        for (lyric_entry_index, lyric_entry) in
-                            song.lyrics.lyrics.iter().enumerate()
-                        {
-                            push_lyric_entry_pages(
-                                lyric_entry_index,
-                                lyric_entry,
-                                playlist_id,
-                                entry_index,
-                                *song_id,
-                                &mut slides,
-                                &mut page_index,
-                            );
-                        }
-                    }
+                                    page_index,
+                                },
+                                slide,
+                            )
+                        },
+                    ));
                 }
                 PlaylistEntry::Text(text) => slides.push((
                     SlideIndex {
@@ -350,67 +304,18 @@ impl Default for Theme {
 }
 
 fn push_lyric_entry_pages(
-    lyric_entry_index: usize,
-    lyric_entry: &LyricEntry,
-    playlist_id: u32,
-    entry_index: usize,
-    song_id: u32,
-    slides: &mut Vec<(SlideIndex, Slide)>,
-    page_index: &mut usize,
-) {
-    match lyric_entry {
-        LyricEntry::Verse { lines, .. } => {
-            for lines_index in 0..lines.len() {
-                slides.push((
-                    SlideIndex {
-                        playlist_id,
-                        entry_index,
-                        page_index: *page_index,
-                    },
-                    Slide::Lyrics {
-                        song_id,
-                        lyric_entry_index,
-                        lines_index,
-                    },
-                ));
-                *page_index += 1;
-            }
-        }
-        LyricEntry::Instrument { .. } => {
-            slides.push((
-                SlideIndex {
-                    playlist_id,
-                    entry_index,
-                    page_index: *page_index,
-                },
-                Slide::Lyrics {
-                    song_id,
-                    lyric_entry_index,
-                    lines_index: 0,
-                },
-            ));
-            *page_index += 1;
-        }
-    }
-}
-
-fn push_lyric_entry_slides(
-    lyric_entry_index: usize,
-    lyric_entry: &LyricEntry,
-    song_id: u32,
     slides: &mut Vec<Slide>,
-    page_index: &mut usize,
+    lyric_entry_index: usize,
+    lyric_entry: &LyricEntry,
+    song_id: u32,
 ) {
     match lyric_entry {
         LyricEntry::Verse { lines, .. } => {
-            for lines_index in 0..lines.len() {
-                slides.push(Slide::Lyrics {
-                    song_id,
-                    lyric_entry_index,
-                    lines_index,
-                });
-                *page_index += 1;
-            }
+            slides.extend((0..lines.len()).map(|lines_index| Slide::Lyrics {
+                song_id,
+                lyric_entry_index,
+                lines_index,
+            }));
         }
         LyricEntry::Instrument { .. } => {
             slides.push(Slide::Lyrics {
@@ -418,7 +323,6 @@ fn push_lyric_entry_slides(
                 lyric_entry_index,
                 lines_index: 0,
             });
-            *page_index += 1;
         }
     }
 }
