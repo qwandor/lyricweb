@@ -7,7 +7,7 @@ use crate::model::{
     helpers::{authors_as_string, first_line, song_matches_filter, title_for_song},
 };
 use leptos::prelude::*;
-use openlyrics::types::{Song, Title};
+use openlyrics::types::{Lines, LyricEntry, Song, Title};
 use web_sys::SubmitEvent;
 
 /// List of all available songs.
@@ -76,6 +76,12 @@ fn add_new_song(write_state: WriteSignal<State>, write_edit_song: WriteSignal<Op
         song.properties.titles.titles = vec![Title {
             title: "New song".to_string(),
             ..Default::default()
+        }];
+        song.lyrics.lyrics = vec![LyricEntry::Verse {
+            name: "v1".to_string(),
+            lang: None,
+            translit: None,
+            lines: vec![Lines::default()],
         }];
         let song_id = state.add_song(song);
         write_edit_song.set(Some(song_id));
