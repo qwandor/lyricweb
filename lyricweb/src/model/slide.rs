@@ -53,7 +53,7 @@ impl SlideContent {
     fn for_text(text: &str, theme: Theme) -> Self {
         Self {
             title: None,
-            body: Some(text.to_owned()),
+            body: Some(format!("<p>{text}</p>")),
             credit: None,
             theme,
         }
@@ -83,7 +83,7 @@ impl SlideContent {
         let body = match item {
             LyricEntry::Verse { name, lines, .. } => {
                 let line = &lines[lines_index];
-                let mut body = String::new();
+                let mut body = "<p>".to_string();
 
                 if let Some(part) = line.part.as_ref() {
                     body += &format!("<strong>({part})</strong><br/>");
@@ -101,10 +101,11 @@ impl SlideContent {
                 if let Some(repeat) = line.repeat {
                     body += &format!("<em>x {repeat}</em><br/>");
                 }
+                body += "</p>";
                 body
             }
             LyricEntry::Instrument { name, .. } => {
-                format!("(instrumental {name})")
+                format!("<p>(instrumental {name})</p>")
             }
         };
 
