@@ -64,7 +64,7 @@ select[size] {
 }
 
 .preview {
-  aspect-ratio: 4/3;
+  aspect-ratio: 16/9;
   box-sizing: border-box;
   border: 1px solid red;
 }
