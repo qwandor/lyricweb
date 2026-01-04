@@ -90,6 +90,11 @@ select[size] {
   margin-top: 2cqi;
 }
 
+.slide h1,
+.slide h2 {
+  text-align: center;
+}
+
 .slide p.credit {
   text-align: right;
   font-style: italic;
