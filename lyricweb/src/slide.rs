@@ -43,26 +43,18 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
             { content.title.as_ref().map(|title| {
                 view! {
                     <h1>{title.clone()}</h1>
-                }})
-            }
-            <p>
-                { content.lines.iter().map(|line| {
-                    let text = line.text.clone();
-                    match (line.bold, line.italic) {
-                        (false, false) => view! { {text}<br/> }.into_any(),
-                        (true, false) => view! { <strong>{text}</strong><br/> }.into_any(),
-                        (false, true) => view! { <em>{text}</em><br/> }.into_any(),
-                        (true, true) => view! { <strong><em>{text}</em></strong><br/> }.into_any(),
-                    }
-                } ).collect::<Vec<_>>() }
-            </p>
-            {
-                content.credit.as_ref().map(|credit| {
-                    view! {
-                        <p class="credit">{credit.clone()}</p>
-                    }
-                })
-            }
+                }
+            })}
+            { content.body.as_ref().map(|body| {
+                view! {
+                    <p inner_html=body.clone() />
+                }
+            })}
+            { content.credit.as_ref().map(|credit| {
+                view! {
+                    <p class="credit">{credit.clone()}</p>
+                }
+            })}
             </div>
         }
     }

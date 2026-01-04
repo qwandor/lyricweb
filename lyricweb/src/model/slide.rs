@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct SlideContent {
     pub title: Option<String>,
-    pub lines: Vec<SlideLine>,
+    pub body: Option<String>,
     pub credit: Option<String>,
     pub theme: Theme,
 }
@@ -44,15 +44,16 @@ impl SlideContent {
                     theme,
                 ))
             }
-            Slide::Text(text) => Some(Self {
-                title: None,
-                lines: vec![SlideLine {
-                    text: (*text).to_owned(),
-                    ..Default::default()
-                }],
-                credit: None,
-                theme,
-            }),
+            Slide::Text(text) => Some(Self::for_text(text, theme)),
+        }
+    }
+
+    fn for_text(text: &str, theme: Theme) -> Self {
+        Self {
+            title: None,
+            body: Some(text.to_owned()),
+            credit: None,
+            theme,
         }
     }
 
@@ -75,62 +76,39 @@ impl SlideContent {
             None
         };
 
-        let lines =
-            match item {
-                LyricEntry::Verse { name, lines, .. } => {
-                    let line = &lines[lines_index];
-                    let mut lines = Vec::new();
+        let body = match item {
+            LyricEntry::Verse { name, lines, .. } => {
+                let line = &lines[lines_index];
+                let mut body = String::new();
 
-                    if let Some(part) = line.part.as_ref() {
-                        lines.push(SlideLine {
-                            text: format!("({part})"),
-                            bold: true,
-                            ..Default::default()
-                        });
-                    }
-
-                    let mut before_first_line = if name.starts_with('v') && lines_index == 0 {
-                        Some(format!("{}. ", &name[1..]))
-                    } else {
-                        None
-                    };
-
-                    lines.extend(simplify_contents(&line.contents).into_iter().map(|line| {
-                        SlideLine {
-                            text: before_first_line.take().unwrap_or_default() + &line,
-                            ..Default::default()
-                        }
-                    }));
-
-                    if let Some(repeat) = line.repeat {
-                        lines.push(SlideLine {
-                            text: format!("x {repeat}"),
-                            bold: true,
-                            ..Default::default()
-                        });
-                    }
-                    lines
+                if let Some(part) = line.part.as_ref() {
+                    body += &format!("<strong>({part})</strong><br/>");
                 }
-                LyricEntry::Instrument { name, .. } => {
-                    vec![SlideLine {
-                        text: format!("(instrumental {name})"),
-                        ..Default::default()
-                    }]
+
+                if name.starts_with('v') && lines_index == 0 {
+                    body += &format!("{}. ", &name[1..]);
                 }
-            };
+
+                for line in simplify_contents(&line.contents) {
+                    body += &line;
+                    body += "<br/>";
+                }
+
+                if let Some(repeat) = line.repeat {
+                    body += &format!("<em>x {repeat}</em><br/>");
+                }
+                body
+            }
+            LyricEntry::Instrument { name, .. } => {
+                format!("(instrumental {name})")
+            }
+        };
 
         Self {
             title,
-            lines,
+            body: Some(body),
             credit,
             theme,
         }
     }
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-pub struct SlideLine {
-    pub text: String,
-    pub bold: bool,
-    pub italic: bool,
 }
