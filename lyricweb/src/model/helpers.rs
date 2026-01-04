@@ -4,13 +4,24 @@
 
 use openlyrics::{
     simplify_contents,
-    types::{Author, Lines, LyricEntry, Song, VerseContent},
+    types::{Author, Lines, LyricEntry, Song, Songbook, VerseContent},
 };
 use std::fmt::Write;
 
 /// Returns the title to use for the given song.
 pub fn title_for_song(song: &Song) -> &str {
     &song.properties.titles.titles[0].title
+}
+
+/// Returns the title to use for the given song, including the first songbook entry if there is one.
+pub fn title_with_songbook(song: &Song) -> String {
+    let title = title_for_song(song);
+    if let Some(songbook) = song.properties.songbooks.songbooks.get(0) {
+        let songbook_entry = songbook_to_string(songbook);
+        format!("{songbook_entry}: {title}")
+    } else {
+        title.to_string()
+    }
 }
 
 /// Returns whether the given song should be displayed when the given search filter is entered.
@@ -155,6 +166,51 @@ pub fn set_authors_from_string(song: &mut Song, authors: &str) {
         .collect();
 }
 
+fn songbook_to_string(songbook: &Songbook) -> String {
+    let name = &songbook.name;
+    if let Some(entry) = &songbook.entry {
+        format!("{name} {entry}")
+    } else {
+        format!("{name}")
+    }
+}
+
+/// Returns the songbooks and entry numbers of the song as a single string, for displaying and
+/// editing.
+pub fn songbook_entries_as_string(song: &Song) -> String {
+    song.properties
+        .songbooks
+        .songbooks
+        .iter()
+        .map(songbook_to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// Sets the songbooks of the given song from a string of the format returned by
+/// `songbook_entries_as_string`.
+pub fn set_songbooks_from_string(song: &mut Song, songbook_entries: &str) {
+    song.properties.songbooks.songbooks = songbook_entries
+        .split(',')
+        .filter_map(|songbook_entry| {
+            let songbook_entry = songbook_entry.trim();
+            if songbook_entry.is_empty() {
+                None
+            } else if let Some((name, entry)) = songbook_entry.rsplit_once(' ') {
+                Some(Songbook {
+                    name: name.to_string(),
+                    entry: Some(entry.to_string()),
+                })
+            } else {
+                Some(Songbook {
+                    name: songbook_entry.to_string(),
+                    entry: None,
+                })
+            }
+        })
+        .collect();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -182,5 +238,13 @@ Line
 
         set_lyrics_from_text(&mut song, text);
         assert_eq!(lyrics_as_text(&song), text);
+    }
+
+    #[test]
+    fn no_songbook() {
+        let mut song = Song::default();
+        assert_eq!(songbook_entries_as_string(&song), "");
+        set_songbooks_from_string(&mut song, "");
+        assert_eq!(song.properties.songbooks.songbooks, []);
     }
 }

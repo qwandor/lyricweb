@@ -7,7 +7,7 @@ use crate::{
         State,
         helpers::{
             authors_as_string, lyrics_as_text, set_authors_from_string, set_lyrics_from_text,
-            title_for_song,
+            set_songbooks_from_string, songbook_entries_as_string, title_for_song,
         },
         slide::SlideContent,
     },
@@ -37,12 +37,13 @@ pub fn EditSong(
 
         let title = NodeRef::new();
         let authors = NodeRef::new();
+        let songbook_entries = NodeRef::new();
         let verseorder = NodeRef::new();
         let lyrics = NodeRef::new();
         Some(view! {
             <h2>"Edit song"</h2>
             <form class="tall"
-                on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap(), authors.get().unwrap(), verseorder.get().unwrap(), lyrics.get().unwrap())>
+                on:submit=move |event| save_song(event, write_state, song_id, title.get().unwrap(), authors.get().unwrap(), songbook_entries.get().unwrap(), verseorder.get().unwrap(), lyrics.get().unwrap())>
                 <table>
                     <tr>
                         <td><label for="title">Title</label></td>
@@ -53,11 +54,15 @@ pub fn EditSong(
                         <td><input type="text" id="author" node_ref=authors prop:value=authors_as_string(&song)/></td>
                     </tr>
                     <tr>
+                        <td><label for="songbook_entries">Songbook entries</label></td>
+                        <td><input type="text" id="songbook_entries" node_ref=songbook_entries prop:value=songbook_entries_as_string(&song)/></td>
+                    </tr>
+                    <tr>
                         <td><label for="verseorder">Verse order</label></td>
                         <td><input type="text" id="verseorder" node_ref=verseorder prop:value=verse_order/></td>
                     </tr>
                 </table>
-                <textarea class="tall" node_ref=lyrics prop:value=lyrics_text></textarea>
+                <textarea node_ref=lyrics prop:value=lyrics_text></textarea>
                 <div class="button-row">
                     <input type="submit" value="Save"/>
                     <input type="button" value="Close" on:click=move |_| write_edit_song.set(None) />
@@ -95,12 +100,14 @@ fn save_song(
     song_id: u32,
     title: HtmlInputElement,
     authors: HtmlInputElement,
+    songbook_entries: HtmlInputElement,
     verseorder: HtmlInputElement,
     lyrics: HtmlTextAreaElement,
 ) {
     event.prevent_default();
     let title = title.value().trim().to_string();
     let authors = authors.value();
+    let songbook_entries = songbook_entries.value();
     let verseorder = verseorder.value().trim().to_string();
     let lyrics = lyrics.value();
 
@@ -111,6 +118,7 @@ fn save_song(
 
         song.properties.titles.titles[0].title = title;
         set_authors_from_string(song, &authors);
+        set_songbooks_from_string(song, &songbook_entries);
         song.properties.verse_order = if verseorder.is_empty() {
             None
         } else {

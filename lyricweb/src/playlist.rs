@@ -4,7 +4,7 @@
 
 use crate::model::{
     Playlist, Slide, SlideIndex, State,
-    helpers::{first_line, title_for_song},
+    helpers::{first_line, title_with_songbook},
 };
 use leptos::prelude::*;
 use web_sys::{HtmlInputElement, SubmitEvent};
@@ -65,7 +65,7 @@ pub fn Playlist(
                     match slide {
                         Slide::SongStart { song_id } => {
                             view! {
-                                <option disabled value={slide_index.to_string()}>{ title_for_song(&state.songs[&song_id]).to_owned() }</option>
+                                <option disabled value={slide_index.to_string()}>{ title_with_songbook(&state.songs[&song_id]).to_owned() }</option>
                             }.into_any()
                         }
                         Slide::Lyrics {

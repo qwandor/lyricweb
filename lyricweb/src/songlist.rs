@@ -4,7 +4,10 @@
 
 use crate::model::{
     PlaylistEntry, State,
-    helpers::{authors_as_string, first_line, song_matches_filter, title_for_song},
+    helpers::{
+        authors_as_string, first_line, song_matches_filter, songbook_entries_as_string,
+        title_for_song, title_with_songbook,
+    },
 };
 use leptos::prelude::*;
 use openlyrics::types::{Lines, LyricEntry, Song, Title};
@@ -32,7 +35,7 @@ pub fn SongList(
                     let state = state.read();
                     state.songs_by_title().into_iter().filter(|(_, song)| song_matches_filter(song, &filter.read())).map(|(id, song)| {
                         view! {
-                            <option value={id.to_string()}>{title_for_song(&song).to_owned()}</option>
+                            <option value={id.to_string()}>{title_with_songbook(&song).to_owned()}</option>
                         }
                     }).collect::<Vec<_>>()
                 }}
@@ -55,10 +58,16 @@ fn SongInfo(state: Signal<State>, selected_song: ReadSignal<Option<u32>>) -> imp
         let state = state.read();
         let song_id = selected_song.get()?;
         let song = state.songs.get(&song_id)?;
+        let songbook_entries = songbook_entries_as_string(&song);
         Some(view! {
             <div>
             <h2>{title_for_song(&song).to_owned()}</h2>
             <p>
+                {if songbook_entries.is_empty() {
+                    None
+                } else {
+                    Some(view! { {songbook_entries}<br/> })
+                }}
                 "Author: "
                 {authors_as_string(&song)}
                 <br/>
