@@ -26,7 +26,7 @@ pub fn title_with_songbook(song: &Song) -> String {
 
 /// Returns whether the given song should be displayed when the given search filter is entered.
 pub fn song_matches_filter(song: &Song, filter: &str) -> bool {
-    title_for_song(song)
+    title_with_songbook(song)
         .to_lowercase()
         .contains(&filter.to_lowercase())
 }
