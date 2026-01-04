@@ -72,6 +72,7 @@ pub fn Playlist(
                             song_id,
                             lyric_entry_index,
                             lines_index,
+                            ..
                         } => {
                             let song = &state.songs[&song_id];
                             let lyric_entry = &song.lyrics.lyrics[lyric_entry_index];

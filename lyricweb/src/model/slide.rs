@@ -31,16 +31,18 @@ impl SlideContent {
         let theme = state.theme.clone();
         match slide {
             Slide::SongStart { .. } => None,
-            Slide::Lyrics {
+            &Slide::Lyrics {
                 song_id,
                 lyric_entry_index,
                 lines_index,
+                last_page,
             } => {
-                let song = &state.songs[song_id];
+                let song = &state.songs[&song_id];
                 Some(Self::song_page(
                     song,
-                    *lyric_entry_index,
-                    *lines_index,
+                    lyric_entry_index,
+                    lines_index,
+                    last_page,
                     theme,
                 ))
             }
@@ -57,7 +59,13 @@ impl SlideContent {
         }
     }
 
-    fn song_page(song: &Song, lyric_entry_index: usize, lines_index: usize, theme: Theme) -> Self {
+    fn song_page(
+        song: &Song,
+        lyric_entry_index: usize,
+        lines_index: usize,
+        last_page: bool,
+        theme: Theme,
+    ) -> Self {
         let item = &song.lyrics.lyrics[lyric_entry_index];
 
         let title = if lyric_entry_index == 0 && lines_index == 0 {
@@ -66,11 +74,7 @@ impl SlideContent {
             None
         };
 
-        let credit = if lyric_entry_index == song.lyrics.lyrics.len() - 1
-            && match item {
-                LyricEntry::Verse { lines, .. } => lines_index == lines.len() - 1,
-                LyricEntry::Instrument { .. } => true,
-            } {
+        let credit = if last_page {
             Some(authors_as_string(song))
         } else {
             None

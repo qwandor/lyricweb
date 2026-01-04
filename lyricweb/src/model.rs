@@ -107,7 +107,8 @@ impl State {
                 } else {
                     let mut index_left = index.page_index - 1;
                     if let Some(verse_order) = &song.properties.verse_order {
-                        for verse in verse_order.split(' ') {
+                        let verse_order_count = verse_order.split(' ').count();
+                        for (verse_order_index, verse) in verse_order.split(' ').enumerate() {
                             if let Some((lyric_entry_index, lyric_entry)) = song
                                 .lyrics
                                 .lyrics
@@ -122,6 +123,9 @@ impl State {
                                                 song_id: *song_id,
                                                 lyric_entry_index,
                                                 lines_index: index_left,
+                                                last_page: verse_order_index
+                                                    == verse_order_count - 1
+                                                    && index_left == lines.len() - 1,
                                             });
                                         } else {
                                             index_left -= lines.len();
@@ -133,6 +137,8 @@ impl State {
                                                 song_id: *song_id,
                                                 lyric_entry_index,
                                                 lines_index: 0,
+                                                last_page: verse_order_index
+                                                    == verse_order_count - 1,
                                             });
                                         } else {
                                             index_left -= 1;
@@ -150,6 +156,9 @@ impl State {
                                             song_id: *song_id,
                                             lyric_entry_index,
                                             lines_index: index_left,
+                                            last_page: lyric_entry_index
+                                                == song.lyrics.lyrics.len() - 1
+                                                && index_left == lines.len() - 1,
                                         });
                                     } else {
                                         index_left -= lines.len();
@@ -161,6 +170,8 @@ impl State {
                                             song_id: *song_id,
                                             lyric_entry_index,
                                             lines_index: 0,
+                                            last_page: lyric_entry_index
+                                                == song.lyrics.lyrics.len() - 1,
                                         });
                                     } else {
                                         index_left -= 1;
@@ -187,7 +198,8 @@ impl State {
         let song = &self.songs[&song_id];
         slides.push(Slide::SongStart { song_id: song_id });
         if let Some(verse_order) = &song.properties.verse_order {
-            for verse in verse_order.split(' ') {
+            let verse_order_count = verse_order.split(' ').count();
+            for (verse_order_index, verse) in verse_order.split(' ').enumerate() {
                 if let Some((lyric_entry_index, lyric_entry)) = song
                     .lyrics
                     .lyrics
@@ -195,12 +207,24 @@ impl State {
                     .enumerate()
                     .find(|(_, lyric_entry)| lyric_entry.name() == verse)
                 {
-                    push_lyric_entry_pages(&mut slides, lyric_entry_index, lyric_entry, song_id);
+                    push_lyric_entry_pages(
+                        &mut slides,
+                        lyric_entry_index,
+                        lyric_entry,
+                        song_id,
+                        verse_order_index == verse_order_count - 1,
+                    );
                 }
             }
         } else {
             for (lyric_entry_index, lyric_entry) in song.lyrics.lyrics.iter().enumerate() {
-                push_lyric_entry_pages(&mut slides, lyric_entry_index, lyric_entry, song_id);
+                push_lyric_entry_pages(
+                    &mut slides,
+                    lyric_entry_index,
+                    lyric_entry,
+                    song_id,
+                    lyric_entry_index == song.lyrics.lyrics.len() - 1,
+                );
             }
         }
         slides
@@ -308,6 +332,7 @@ fn push_lyric_entry_pages(
     lyric_entry_index: usize,
     lyric_entry: &LyricEntry,
     song_id: u32,
+    last_entry: bool,
 ) {
     match lyric_entry {
         LyricEntry::Verse { lines, .. } => {
@@ -315,6 +340,7 @@ fn push_lyric_entry_pages(
                 song_id,
                 lyric_entry_index,
                 lines_index,
+                last_page: last_entry && lines_index == lines.len() - 1,
             }));
         }
         LyricEntry::Instrument { .. } => {
@@ -322,6 +348,7 @@ fn push_lyric_entry_pages(
                 song_id,
                 lyric_entry_index,
                 lines_index: 0,
+                last_page: last_entry,
             });
         }
     }
@@ -368,6 +395,7 @@ pub enum Slide<'a> {
         song_id: u32,
         lyric_entry_index: usize,
         lines_index: usize,
+        last_page: bool,
     },
     Text(&'a str),
 }
@@ -583,6 +611,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 0,
                         lines_index: 0,
+                        last_page: false,
                     }
                 ),
                 (
@@ -595,6 +624,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 0,
                         lines_index: 1,
+                        last_page: false,
                     }
                 ),
                 (
@@ -607,6 +637,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 1,
                         lines_index: 0,
+                        last_page: true,
                     }
                 ),
             ]
@@ -629,6 +660,7 @@ mod tests {
                 song_id: 0,
                 lyric_entry_index: 0,
                 lines_index: 0,
+                last_page: false,
             })
         );
         assert_eq!(
@@ -751,6 +783,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 0,
                         lines_index: 0,
+                        last_page: false,
                     }
                 ),
                 (
@@ -763,6 +796,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 1,
                         lines_index: 0,
+                        last_page: false,
                     }
                 ),
                 (
@@ -775,6 +809,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 2,
                         lines_index: 0,
+                        last_page: false,
                     }
                 ),
                 (
@@ -787,6 +822,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 1,
                         lines_index: 0,
+                        last_page: false,
                     }
                 ),
                 (
@@ -799,6 +835,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 3,
                         lines_index: 0,
+                        last_page: false,
                     }
                 ),
                 (
@@ -811,6 +848,7 @@ mod tests {
                         song_id: 0,
                         lyric_entry_index: 1,
                         lines_index: 0,
+                        last_page: true,
                     }
                 ),
             ]
@@ -825,6 +863,7 @@ mod tests {
                 song_id: 0,
                 lyric_entry_index: 1,
                 lines_index: 0,
+                last_page: false,
             })
         );
     }
