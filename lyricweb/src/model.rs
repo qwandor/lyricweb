@@ -93,6 +93,19 @@ impl State {
         self.songs.remove(&id);
     }
 
+    pub fn slide_text(&self, index: SlideIndex) -> Option<String> {
+        if let PlaylistEntry::Text(text) = self
+            .playlists
+            .get(&index.playlist_id)?
+            .entries
+            .get(index.entry_index)?
+        {
+            Some(text.to_owned())
+        } else {
+            None
+        }
+    }
+
     pub fn slide(&self, index: SlideIndex) -> Option<Slide<'_>> {
         let entry = self
             .playlists

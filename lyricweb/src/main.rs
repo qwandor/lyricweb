@@ -111,6 +111,10 @@ fn Controller(
     let (current_playlist, write_current_playlist, _) =
         use_local_storage::<_, OptionCodec<FromToStringCodec>>("current_playlist");
     let no_current_playlist = move || current_playlist.get().is_none();
+    let current_slide_text = move || {
+        let index = current_slide.get()?;
+        state.read().slide_text(index)
+    };
 
     if current_playlist.get_untracked().is_none()
         && let Some((&playlist_id, _)) = state.get_untracked().playlists.first_key_value()
@@ -163,17 +167,20 @@ fn Controller(
                     <p id="error">{ error }</p>
                 </div>
                 <SongList state write_state current_playlist write_edit_song />
-                <div class="button-row">
-                    <form class="wide" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
-                        <textarea node_ref=text_entry />
-                        <input type="submit" value="Add to playlist" disabled=no_current_playlist />
-                    </form>
-                </div>
             </div>
             <div class="column">
                 <Show when=move || edit_song.get().is_some()
                 fallback=move || view! {
                     <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
+                    <form class="vertical" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
+                        <textarea rows="6" node_ref=text_entry prop:value=current_slide_text />
+                        <div class="button-row">
+                            <input type="submit" value="Add" disabled=no_current_playlist />
+                            <input type="button" value="Update"
+                                disabled=move || current_slide_text().is_none()
+                                on:click=move |_| update_text_in_playlist(text_entry.get().unwrap(), current_slide, write_state) />
+                        </div>
+                    </form>
                 }>
                     <EditSong state write_state edit_song write_edit_song/>
                 </Show>
@@ -422,4 +429,27 @@ fn add_text_to_playlist(
             .push(PlaylistEntry::Text(text))
     });
     text_entry.set_value("");
+}
+
+fn update_text_in_playlist(
+    text_entry: HtmlTextAreaElement,
+    current_slide: Signal<Option<SlideIndex>>,
+    write_state: WriteSignal<State>,
+) {
+    let Some(current_slide) = current_slide.get() else {
+        return;
+    };
+
+    let new_text = text_entry.value();
+
+    write_state.update(|state| {
+        if let PlaylistEntry::Text(text) = &mut state
+            .playlists
+            .get_mut(&current_slide.playlist_id)
+            .unwrap()
+            .entries[current_slide.entry_index]
+        {
+            *text = new_text;
+        }
+    });
 }
