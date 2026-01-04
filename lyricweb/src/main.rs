@@ -173,7 +173,7 @@ fn Controller(
                 fallback=move || view! {
                     <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
                     <form class="vertical" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
-                        <textarea rows="6" node_ref=text_entry prop:value=current_slide_text />
+                        <textarea rows="6" node_ref=text_entry prop:value=move || current_slide_text().unwrap_or_default() />
                         <div class="button-row">
                             <input type="submit" value="Add" disabled=no_current_playlist />
                             <input type="button" value="Update"
