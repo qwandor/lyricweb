@@ -172,7 +172,7 @@ fn Controller(
                 <Show when=move || edit_song.get().is_some()
                 fallback=move || view! {
                     <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>
-                    <form class="vertical" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
+                    <form class="vertical" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_current_slide, write_state)>
                         <textarea rows="6" node_ref=text_entry prop:value=move || current_slide_text().unwrap_or_default() />
                         <div class="button-row">
                             <input type="submit" value="Add" disabled=no_current_playlist />
@@ -411,6 +411,7 @@ fn add_text_to_playlist(
     event: SubmitEvent,
     text_entry: HtmlTextAreaElement,
     current_playlist: Signal<Option<u32>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
     write_state: WriteSignal<State>,
 ) {
     event.prevent_default();
@@ -421,12 +422,13 @@ fn add_text_to_playlist(
 
     let text = text_entry.value();
     write_state.update(|state| {
-        state
-            .playlists
-            .get_mut(&current_playlist)
-            .unwrap()
-            .entries
-            .push(PlaylistEntry::Text(text))
+        let entries = &mut state.playlists.get_mut(&current_playlist).unwrap().entries;
+        entries.push(PlaylistEntry::Text(text));
+        write_current_slide.set(Some(SlideIndex {
+            playlist_id: current_playlist,
+            entry_index: entries.len() - 1,
+            page_index: 0,
+        }));
     });
     text_entry.set_value("");
 }
