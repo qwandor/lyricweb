@@ -10,6 +10,7 @@ use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
 };
+use pulldown_cmark::{Parser, html::push_html};
 use serde::{Deserialize, Serialize};
 
 /// The contents of a slide ready to render.
@@ -51,9 +52,12 @@ impl SlideContent {
     }
 
     fn for_text(text: &str, theme: Theme) -> Self {
+        let parser = Parser::new(text);
+        let mut body = String::new();
+        push_html(&mut body, parser);
         Self {
             title: None,
-            body: Some(format!("<p>{text}</p>")),
+            body: Some(body),
             credit: None,
             theme,
         }
