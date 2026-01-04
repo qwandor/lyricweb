@@ -33,7 +33,7 @@ use leptos_use::{storage::use_local_storage, use_event_listener};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    Event, HtmlInputElement, PresentationAvailability, PresentationConnection,
+    Event, HtmlTextAreaElement, PresentationAvailability, PresentationConnection,
     PresentationConnectionAvailableEvent, PresentationConnectionState, PresentationRequest,
     SubmitEvent, Window,
 };
@@ -165,7 +165,7 @@ fn Controller(
                 <SongList state write_state current_playlist write_edit_song />
                 <div class="button-row">
                     <form class="wide" on:submit=move |event| add_text_to_playlist(event, text_entry.get().unwrap(), current_playlist, write_state)>
-                        <input type="text" node_ref=text_entry />
+                        <textarea node_ref=text_entry />
                         <input type="submit" value="Add to playlist" disabled=no_current_playlist />
                     </form>
                 </div>
@@ -402,7 +402,7 @@ fn spawn_show_error(
 
 fn add_text_to_playlist(
     event: SubmitEvent,
-    text_entry: HtmlInputElement,
+    text_entry: HtmlTextAreaElement,
     current_playlist: Signal<Option<u32>>,
     write_state: WriteSignal<State>,
 ) {
