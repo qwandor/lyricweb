@@ -129,26 +129,8 @@ fn Controller(
 
     let presentation_window = StoredValue::new_local(None);
 
-    let (presentation_displays_available, write_presentation_displays_available) = signal(false);
-    let presentation_connection = RwSignal::new_local(None);
-
-    let presentation_request =
-        StoredValue::new_local(PresentationRequest::new_with_url("?present_remote=true").unwrap());
-    show_error(
-        setup_presentation_request(
-            &presentation_request.read_value(),
-            current_slide_content,
-            presentation_connection,
-        ),
-        write_error,
-    );
-    spawn_show_error(
-        listen_presentation_availability(
-            presentation_request.read_value().clone(),
-            write_presentation_displays_available,
-        ),
-        write_error,
-    );
+    let (presentation_displays_available, presentation_connection, presentation_request) =
+        presentation_init(current_slide_content, write_error);
 
     view! {
         <div id="controller">
@@ -198,7 +180,7 @@ fn Controller(
                             } else if presentation_displays_available.get() {
                                 view! {
                                     <input type="button" value="Present on external screen" on:click=move |_| {
-                                        spawn_show_error(open_external_presentation(presentation_request.read_value().clone()), write_error)
+                                        spawn_show_error(open_external_presentation(presentation_request.read_value().clone().unwrap()), write_error)
                                     } />
                                 }.into_any()
                             } else {
@@ -288,6 +270,44 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
         .unwrap();
 
     *presentation_window = Some(new_presentation_window);
+}
+
+fn presentation_init(
+    current_slide_content: Signal<SlideContent>,
+    write_error: WriteSignal<Option<String>>,
+) -> (
+    ReadSignal<bool>,
+    RwSignal<Option<PresentationConnection>, LocalStorage>,
+    StoredValue<Option<PresentationRequest>, LocalStorage>,
+) {
+    let (presentation_displays_available, write_presentation_displays_available) = signal(false);
+    let presentation_connection = RwSignal::new_local(None);
+
+    let presentation_request = PresentationRequest::new_with_url("?present_remote=true").ok();
+    if let Some(presentation_request) = &presentation_request {
+        show_error(
+            setup_presentation_request(
+                &presentation_request,
+                current_slide_content,
+                presentation_connection,
+            ),
+            write_error,
+        );
+        spawn_show_error(
+            listen_presentation_availability(
+                presentation_request.clone(),
+                write_presentation_displays_available,
+            ),
+            write_error,
+        );
+    }
+    let presentation_request = StoredValue::new_local(presentation_request);
+
+    (
+        presentation_displays_available,
+        presentation_connection,
+        presentation_request,
+    )
 }
 
 fn setup_presentation_request(
