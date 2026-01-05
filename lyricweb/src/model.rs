@@ -330,8 +330,8 @@ pub struct Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            heading_size: 5,
-            body_size: 4,
+            heading_size: 50,
+            body_size: 40,
             heading_colour: "#000000".to_string(),
             body_colour: "#000000".to_string(),
             background_colour: "#ffffff".to_string(),
