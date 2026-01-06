@@ -1,22 +1,18 @@
 [package]
-name = "lyrictool"
+name = "lyricutils"
 version = "0.1.0"
 edition = "2024"
 authors = ["Andrew Walbran <qwandor@gmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "Command-line tool for working with OpenLyrics XML files."
+description = "Utilities for converting between different formats of song lyrics."
 repository = "https://github.com/qwandor/lyricweb"
-keywords = ["lyrics", "openlyrics", "xml"]
-categories = ["command-line-utilities"]
+keywords = ["lyrics", "openlyrics", "xml", "abc", "musicxml"]
+categories = ["encoding"]
 
 [dependencies]
 abc-parser = "0.4.0"
-clap = { version = "4.5.54", features = ["derive"] }
-eyre = "0.6.12"
 log = "0.4.29"
-lyricutils = { version = "0.1.0", path = "../lyricutils" }
 musicxml = "1.1.2"
 openlyrics = { version = "0.1.1", path = "../openlyrics" }
-pretty_env_logger = "0.5.0"
 quick-xml = { version = "0.38.4", features = ["serialize"] }
 regex = "1.12.2"

@@ -1368,9 +1368,22 @@ dependencies = [
  "clap",
  "eyre",
  "log",
+ "lyricutils",
  "musicxml",
  "openlyrics",
  "pretty_env_logger",
+ "quick-xml",
+ "regex",
+]
+
+[[package]]
+name = "lyricutils"
+version = "0.1.0"
+dependencies = [
+ "abc-parser",
+ "log",
+ "musicxml",
+ "openlyrics",
  "quick-xml",
  "regex",
 ]

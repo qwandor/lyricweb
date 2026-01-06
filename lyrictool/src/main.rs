@@ -2,17 +2,14 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
-mod abc;
-mod music_xml;
-
-use crate::{abc::tunebook_to_open_lyrics, music_xml::music_xml_to_open_lyrics};
 use abc_parser::abc::tune_book;
 use clap::{Parser, ValueEnum};
 use eyre::{OptionExt, Report, eyre};
+use lyricutils::{music_xml_to_open_lyrics, tunebook_to_open_lyrics};
 use musicxml::read_score_partwise;
 use openlyrics::{
     simplify_contents,
-    types::{Lines, LyricEntry, Lyrics, Properties, Song, VerseContent},
+    types::{LyricEntry, Lyrics, Properties, Song},
 };
 use quick_xml::de::from_reader;
 use std::{
@@ -102,23 +99,6 @@ fn print_lyrics(lyrics: &Lyrics) {
             }
             LyricEntry::Instrument { name, .. } => println!("Skipping instrumental {name}."),
         }
-    }
-}
-
-fn lines_to_open_lyrics(verse_lyrics: Vec<String>) -> Lines {
-    let mut contents = Vec::new();
-    for line in verse_lyrics {
-        if line.is_empty() {
-            continue;
-        }
-        if !contents.is_empty() {
-            contents.push(VerseContent::Br);
-        }
-        contents.push(VerseContent::Text(line));
-    }
-    Lines {
-        contents,
-        ..Default::default()
     }
 }
 
