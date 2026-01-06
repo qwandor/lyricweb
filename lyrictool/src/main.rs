@@ -296,6 +296,7 @@ fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
         if let Some(body) = &tune.body {
             let mut verses = vec![];
             let mut verse = 0;
+            let mut stylesheettext = false;
             for line in &body.lines {
                 match line {
                     TuneLine::Music(_) => {
@@ -308,6 +309,22 @@ fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
                         }
                         verses[verse].push(lyric);
                         verse += 1;
+                    }
+                    TuneLine::Comment(Comment::StylesheetDirective(directive)) => {
+                        if directive.starts_with("begintext") {
+                            stylesheettext = true;
+                            verses.push(Vec::new());
+                        } else if directive.starts_with("endtext") {
+                            stylesheettext = false
+                        } else if stylesheettext {
+                            let directive = directive.trim();
+                            if directive.is_empty() {
+                                verses.push(Vec::new());
+                            } else {
+                                let line = directive.replace("\\t", "");
+                                verses.last_mut().unwrap().push(line);
+                            }
+                        }
                     }
                     TuneLine::Symbol(_) => {}
                     TuneLine::Comment(_) => {}
