@@ -310,32 +310,48 @@ fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
                     TuneLine::Comment(_) => {}
                 }
             }
+
+            let mut chorus = None;
+            if let Some(rest_max_line_count) = verses.iter().skip(1).map(|lines| lines.len()).max()
+            {
+                // If the first verse is longer than the rest, the end of it is probably a chorus.
+                if verses[0].len() > rest_max_line_count {
+                    let lines = verses[0].split_off(rest_max_line_count);
+                    chorus = Some(make_verse("c".to_string(), lines));
+                }
+            }
+
             song.lyrics.lyrics = verses
                 .into_iter()
                 .enumerate()
-                .map(|(i, verse)| {
-                    let mut contents = Vec::new();
-                    for (i, line) in verse.into_iter().enumerate() {
-                        if i != 0 {
-                            contents.push(VerseContent::Br);
-                        }
-                        contents.push(VerseContent::Text(line));
-                    }
-                    LyricEntry::Verse {
-                        name: format!("v{}", i + 1),
-                        lines: vec![Lines {
-                            contents,
-                            ..Default::default()
-                        }],
-                        lang: None,
-                        translit: None,
-                    }
-                })
+                .map(|(i, verse)| make_verse(format!("v{}", i + 1), verse))
                 .collect();
+            if let Some(chorus) = chorus {
+                song.lyrics.lyrics.insert(1, chorus);
+            }
         }
     }
 
     song
+}
+
+fn make_verse(name: String, lines: Vec<String>) -> LyricEntry {
+    let mut contents = Vec::new();
+    for (i, line) in lines.into_iter().enumerate() {
+        if i != 0 {
+            contents.push(VerseContent::Br);
+        }
+        contents.push(VerseContent::Text(line));
+    }
+    LyricEntry::Verse {
+        name,
+        lines: vec![Lines {
+            contents,
+            ..Default::default()
+        }],
+        lang: None,
+        translit: None,
+    }
 }
 
 fn lyric_line_to_string(lyric_line: &LyricLine) -> String {
