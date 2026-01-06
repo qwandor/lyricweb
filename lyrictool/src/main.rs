@@ -5,7 +5,8 @@
 use abc_parser::{
     abc::tune_book,
     datatypes::{
-        Comment, HeaderLine, IgnoredLine, InfoField, LyricLine, LyricSymbol, TuneBook, TuneLine,
+        Comment, HeaderLine, IgnoredLine, InfoField, LyricLine, LyricSymbol, SymbolAlignment,
+        TuneBook, TuneLine,
     },
 };
 use clap::{Parser, ValueEnum};
@@ -339,16 +340,28 @@ fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
 
 fn lyric_line_to_string(lyric_line: &LyricLine) -> String {
     let mut line = String::new();
+    let mut include_space = false;
+    info!("{:?}", lyric_line.symbols);
     for symbol in &lyric_line.symbols {
         match symbol {
             LyricSymbol::Syllable(syllable) => {
                 line += syllable;
+                include_space = true;
             }
             LyricSymbol::Space(_) => {
-                line += " ";
+                if include_space {
+                    line += " ";
+                    include_space = false;
+                }
             }
-            LyricSymbol::SymbolAlignment(_) => {}
+            LyricSymbol::SymbolAlignment(SymbolAlignment::Break) => {
+                include_space = false;
+            }
+            _ => {}
         }
+    }
+    if !include_space && !line.ends_with(" ") && !line.is_empty() {
+        line += "-";
     }
     line.trim().to_string()
 }
@@ -368,10 +381,35 @@ fn abc_author(author_type: &str, name: &str) -> Option<Author> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use abc_parser::datatypes::SymbolAlignment;
     use clap::CommandFactory;
 
     #[test]
     fn verify_args() {
         Args::command().debug_assert();
+    }
+
+    #[test]
+    fn lyric_line_empty() {
+        assert_eq!(lyric_line_to_string(&LyricLine::new(vec![])), "");
+    }
+
+    #[test]
+    fn lyric_line_spaces() {
+        assert_eq!(
+            lyric_line_to_string(&LyricLine::new(vec![
+                LyricSymbol::Space(" ".to_string()),
+                LyricSymbol::Syllable("foo".to_string()),
+                LyricSymbol::SymbolAlignment(SymbolAlignment::Skip),
+                LyricSymbol::Syllable("bar".to_string()),
+                LyricSymbol::Space("  ".to_string()),
+                LyricSymbol::Syllable("ba".to_string()),
+                LyricSymbol::SymbolAlignment(SymbolAlignment::Break),
+                LyricSymbol::Space("  ".to_string()),
+                LyricSymbol::Syllable("z".to_string()),
+                LyricSymbol::Space(" ".to_string()),
+            ])),
+            "foobar baz"
+        );
     }
 }
