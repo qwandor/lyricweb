@@ -1392,6 +1392,7 @@ dependencies = [
 name = "lyricweb"
 version = "0.1.0"
 dependencies = [
+ "abc-parser",
  "console_error_panic_hook",
  "gloo-console",
  "gloo-file",
@@ -1401,6 +1402,7 @@ dependencies = [
  "leptos-use",
  "leptos_meta",
  "leptos_router",
+ "lyricutils",
  "openlyrics",
  "pulldown-cmark",
  "quick-xml",

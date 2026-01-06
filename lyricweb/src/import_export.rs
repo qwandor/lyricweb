@@ -6,11 +6,13 @@ use crate::{
     files::{FileType, pick_open_file, pick_save_file, write_and_close},
     model::State,
 };
+use abc_parser::abc::tune_book;
 use gloo_file::{File, futures::read_as_text};
 use gloo_net::http::Request;
 use gloo_utils::format::JsValueSerdeExt;
 use leptos::prelude::*;
 use leptos_router::NavigateOptions;
+use lyricutils::tunebook_to_open_lyrics;
 use wasm_bindgen::JsValue;
 use web_sys::{
     FileSystemWritableFileStream, OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent,
@@ -70,7 +72,7 @@ pub async fn import_url(
     }
 
     let body = response.text().await.map_err(|e| e.to_string())?;
-    import_str(url.ends_with(".json"), &body, write_state)?;
+    import_str(Format::from_filename(&url), &body, write_state)?;
 
     navigate(".", Default::default());
     Ok(())
@@ -89,13 +91,20 @@ pub async fn import(
     options.set_types(
         &JsValue::from_serde(&[
             FileType {
-                description: Some("JSON or XML file".to_string()),
+                description: Some("ABC, JSON or XML file".to_string()),
                 accept: [
+                    ("text/vnd.abc".to_string(), vec![".abc".to_string()]),
                     ("application/json".to_string(), vec![".json".to_string()]),
                     ("text/xml".to_string(), vec![".xml".to_string()]),
                 ]
                 .into_iter()
                 .collect(),
+            },
+            FileType {
+                description: Some("ABC file".to_string()),
+                accept: [("text/vnd.abc".to_string(), vec![".abc".to_string()])]
+                    .into_iter()
+                    .collect(),
             },
             FileType {
                 description: Some("JSON file".to_string()),
@@ -134,18 +143,47 @@ async fn import_file(
         file.raw_mime_type()
     )));
     let text = read_as_text(&file).await.map_err(|e| e.to_string())?;
-    import_str(file.name().ends_with(".json"), &text, write_state)
+    import_str(Format::from_filename(&file.name()), &text, write_state)
 }
 
-fn import_str(json: bool, text: &str, write_state: WriteSignal<State>) -> Result<(), String> {
-    if json {
-        let imported_state = serde_json::from_str(&text).map_err(|e| e.to_string())?;
-        write_state.update(|state| state.merge(&imported_state));
-    } else {
-        let song = quick_xml::de::from_str(&text).map_err(|e| e.to_string())?;
-        write_state.update(|state| {
-            state.add_song(song);
-        });
+fn import_str(format: Format, text: &str, write_state: WriteSignal<State>) -> Result<(), String> {
+    match format {
+        Format::Json => {
+            let imported_state = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+            write_state.update(|state| state.merge(&imported_state));
+        }
+        Format::Xml => {
+            let song = quick_xml::de::from_str(&text).map_err(|e| e.to_string())?;
+            write_state.update(|state| {
+                state.add_song(song);
+            });
+        }
+        Format::Abc => {
+            let tunebook = tune_book(text).map_err(|e| e.to_string())?;
+            let song = tunebook_to_open_lyrics(&tunebook);
+            write_state.update(|state| {
+                state.add_song(song);
+            });
+        }
     }
     Ok(())
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum Format {
+    Json,
+    Xml,
+    Abc,
+}
+
+impl Format {
+    fn from_filename(filename: &str) -> Self {
+        if filename.ends_with(".json") {
+            Self::Json
+        } else if filename.ends_with(".xml") {
+            Self::Xml
+        } else {
+            Self::Abc
+        }
+    }
 }
