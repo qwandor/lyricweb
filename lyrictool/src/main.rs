@@ -22,6 +22,7 @@ use openlyrics::{
     types::{Author, Lines, LyricEntry, Lyrics, Properties, Song, Theme, Title, VerseContent},
 };
 use quick_xml::de::from_reader;
+use regex::Regex;
 use std::{
     collections::BTreeMap,
     fmt::Debug,
@@ -232,6 +233,8 @@ fn lines_to_open_lyrics(verse_lyrics: Vec<String>) -> Lines {
 }
 
 fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
+    let verse_number_regex = Regex::new(r"^[1-9][0-9]?\.").unwrap();
+
     let mut song = Song::default();
     for comment in &tunebook.comments {
         if let IgnoredLine::Comment(Comment::CommentLine(_, comment)) = comment {
@@ -324,7 +327,10 @@ fn tunebook_to_open_lyrics(tunebook: &TuneBook) -> Song {
             song.lyrics.lyrics = verses
                 .into_iter()
                 .enumerate()
-                .map(|(i, verse)| make_verse(format!("v{}", i + 1), verse))
+                .map(|(i, mut verse)| {
+                    verse[0] = verse_number_regex.replace(&verse[0], "").to_string();
+                    make_verse(format!("v{}", i + 1), verse)
+                })
                 .collect();
             if let Some(chorus) = chorus {
                 song.lyrics.lyrics.insert(1, chorus);

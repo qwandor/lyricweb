@@ -1372,6 +1372,7 @@ dependencies = [
  "openlyrics",
  "pretty_env_logger",
  "quick-xml",
+ "regex",
 ]
 
 [[package]]
