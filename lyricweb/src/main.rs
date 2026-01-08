@@ -91,7 +91,6 @@ fn presentation_keydown(
     state: Signal<State>,
     write_current_slide: WriteSignal<Option<SlideIndex>>,
 ) {
-    gloo_console::log!(&event);
     match event.key().as_str() {
         "ArrowLeft" => {
             event.prevent_default();
