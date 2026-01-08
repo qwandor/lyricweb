@@ -12,8 +12,8 @@ use leptos_use::use_event_listener;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    Event, KeyboardEvent, PresentationConnection, PresentationConnectionAvailableEvent,
-    PresentationConnectionCloseEvent, PresentationConnectionList, PresentationConnectionState,
+    Event, KeyboardEvent, PresentationConnection, PresentationConnectionCloseEvent,
+    PresentationConnectionList, PresentationConnectionState,
 };
 
 #[component]
@@ -102,19 +102,6 @@ async fn setup_receiver(
         .map_err(|e| format!("{e:?}"))?
         .unchecked_into::<PresentationConnectionList>();
     gloo_console::log!(&connection_list);
-
-    _ = use_event_listener(
-        connection_list.clone(),
-        Custom::new("connectionavailable"),
-        move |event: PresentationConnectionAvailableEvent| {
-            gloo_console::log!(&event);
-            setup_connection(
-                &event.connection(),
-                write_current_slide_content,
-                write_error,
-            );
-        },
-    );
 
     let connection = connection_list
         .connections()
