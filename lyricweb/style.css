@@ -13,6 +13,10 @@ body,
   margin: 0px;
 }
 
+#presentation p#error {
+  margin: 0px;
+}
+
 #controller {
   display: flex;
   padding: 8px;
