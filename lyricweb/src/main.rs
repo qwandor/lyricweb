@@ -33,7 +33,7 @@ use leptos_use::{storage::use_local_storage, use_event_listener};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    Event, HtmlTextAreaElement, PresentationAvailability, PresentationConnection,
+    Event, HtmlTextAreaElement, KeyboardEvent, PresentationAvailability, PresentationConnection,
     PresentationConnectionAvailableEvent, PresentationConnectionState, PresentationRequest,
     SubmitEvent, Window,
 };
@@ -63,7 +63,9 @@ fn App() -> impl IntoView {
             <Routes fallback=|| "Not found">
                 <Route path=path!("*any") view={move || if query_signal("present").0.get().unwrap_or_default() {
                     view! {
-                        <Slide slide=current_slide_content/>
+                        <div id="presentation" tabindex="0" on:keydown=move |event| presentation_keydown(event, state, write_current_slide)>
+                            <Slide slide=current_slide_content/>
+                        </div>
                     }.into_any()
                 } else if query_signal("present_remote").0.get().unwrap_or_default() {
                     view! {
@@ -81,6 +83,25 @@ fn App() -> impl IntoView {
             }/>
             </Routes>
         </Router>
+    }
+}
+
+fn presentation_keydown(
+    event: KeyboardEvent,
+    state: Signal<State>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+) {
+    gloo_console::log!(&event);
+    match event.key().as_str() {
+        "ArrowLeft" => {
+            event.prevent_default();
+            previous_slide(write_current_slide, state);
+        }
+        "ArrowRight" => {
+            event.prevent_default();
+            next_slide(write_current_slide, state);
+        }
+        _ => {}
     }
 }
 
