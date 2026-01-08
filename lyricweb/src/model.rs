@@ -426,6 +426,16 @@ pub enum PlaylistEntry {
     Text(String),
 }
 
+impl PlaylistEntry {
+    /// Returns the number of pages that this entry has.
+    pub fn page_count(&self, state: &State) -> usize {
+        match self {
+            PlaylistEntry::Song { song_id } => state.slides_for_song(*song_id).len(),
+            PlaylistEntry::Text(_) => 1,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SlideIndex {
     /// The ID of the playlist containing the slide.
@@ -434,6 +444,47 @@ pub struct SlideIndex {
     pub entry_index: usize,
     /// The index of the page within the entry.
     pub page_index: usize,
+}
+
+impl SlideIndex {
+    pub fn has_previous(&self) -> bool {
+        self.entry_index > 0 || self.page_index > 0
+    }
+
+    pub fn has_next(&self, state: &State) -> bool {
+        let Some(playlist) = state.playlists.get(&self.playlist_id) else {
+            return false;
+        };
+        self.entry_index != playlist.entries.len() - 1
+            || self.page_index != playlist.entries[self.entry_index].page_count(state) - 1
+    }
+
+    /// Changes the index to point to the previous slide, if there is one.
+    pub fn previous(&mut self, state: &State) {
+        if self.page_index > 0 {
+            self.page_index -= 1;
+        } else if self.entry_index > 0 {
+            let Some(playlist) = state.playlists.get(&self.playlist_id) else {
+                return;
+            };
+            self.entry_index -= 1;
+            self.page_index = playlist.entries[self.entry_index].page_count(state) - 1;
+        }
+    }
+
+    /// Changes the index to point to the next slide, if there is one.
+    pub fn next(&mut self, state: &State) {
+        let Some(playlist) = state.playlists.get(&self.playlist_id) else {
+            return;
+        };
+        let page_count = playlist.entries[self.entry_index].page_count(state);
+        if self.page_index + 1 < page_count {
+            self.page_index += 1;
+        } else if self.entry_index + 1 < playlist.entries.len() {
+            self.entry_index += 1;
+            self.page_index = 0;
+        }
+    }
 }
 
 impl Display for SlideIndex {

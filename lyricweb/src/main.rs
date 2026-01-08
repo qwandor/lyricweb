@@ -115,6 +115,20 @@ fn Controller(
         let index = current_slide.get()?;
         state.read().slide_text(index)
     };
+    let no_previous_slide = move || {
+        if let Some(current_slide) = current_slide.get() {
+            !current_slide.has_previous()
+        } else {
+            false
+        }
+    };
+    let no_next_slide = move || {
+        if let Some(current_slide) = current_slide.get() {
+            !current_slide.has_next(&state.read())
+        } else {
+            false
+        }
+    };
 
     if current_playlist.get_untracked().is_none()
         && let Some((&playlist_id, _)) = state.get_untracked().playlists.first_key_value()
@@ -191,6 +205,10 @@ fn Controller(
                     <div class="preview">
                         <Slide slide=current_slide_content/>
                     </div>
+                    <form>
+                        <input type="button" value="Previous" disabled=no_previous_slide on:click=move |_| previous_slide(write_current_slide, state) />
+                        <input type="button" value="Next" disabled=no_next_slide on:click=move |_| next_slide(write_current_slide, state) />
+                    </form>
                     <ThemeSettings state write_state />
                 }>
                     <PreviewSlides state song_id=edit_song />
@@ -472,6 +490,22 @@ fn update_text_in_playlist(
             .entries[current_slide.entry_index]
         {
             *text = new_text;
+        }
+    });
+}
+
+fn previous_slide(write_current_slide: WriteSignal<Option<SlideIndex>>, state: Signal<State>) {
+    write_current_slide.update(|current_slide| {
+        if let Some(current_slide) = current_slide {
+            current_slide.previous(&state.read());
+        }
+    });
+}
+
+fn next_slide(write_current_slide: WriteSignal<Option<SlideIndex>>, state: Signal<State>) {
+    write_current_slide.update(|current_slide| {
+        if let Some(current_slide) = current_slide {
+            current_slide.next(&state.read());
         }
     });
 }
