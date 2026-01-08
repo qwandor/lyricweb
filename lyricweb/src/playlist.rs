@@ -46,6 +46,7 @@ pub fn Playlist(
                 <input type="text" node_ref=playlist_name minlength="1" size="10"
                     prop:value=move || current_playlist.get().and_then(|playlist_id| Some(state.get().playlists.get(&playlist_id)?.name.clone())).unwrap_or_default() />
                 <input type="submit" value="Rename" disabled=no_current_playlist />
+                <input type="button" value="Duplicate" disabled=no_current_playlist on:click=move |_| duplicate_playlist(playlist_name.get().unwrap(), write_state, current_playlist, write_current_playlist) />
             </form>
         </div>
         <form class="tall">
@@ -123,10 +124,33 @@ fn rename_playlist(
     let new_name = text_entry.value();
     write_state.update(|state| state.playlists.get_mut(&current_playlist).unwrap().name = new_name);
 }
+
 /// Creates a new playlist and switches to it.
 fn new_playlist(write_state: WriteSignal<State>, write_current_playlist: WriteSignal<Option<u32>>) {
     let mut new_playlist_id = 0;
     write_state.update(|state| new_playlist_id = state.add_playlist(Playlist::new("New")));
+    write_current_playlist.set(Some(new_playlist_id));
+}
+
+/// Makes a copy of the current playlist with a new name and switches to it.
+fn duplicate_playlist(
+    name: HtmlInputElement,
+    write_state: WriteSignal<State>,
+    current_playlist: Signal<Option<u32>>,
+    write_current_playlist: WriteSignal<Option<u32>>,
+) {
+    let Some(playlist_id) = current_playlist.get() else {
+        return;
+    };
+
+    let mut state = write_state.write();
+    let Some(playlist) = state.playlists.get(&playlist_id) else {
+        return;
+    };
+    let mut playlist = playlist.clone();
+    playlist.name = name.value();
+    let new_playlist_id = state.add_playlist(playlist);
+    drop(state);
     write_current_playlist.set(Some(new_playlist_id));
 }
 
