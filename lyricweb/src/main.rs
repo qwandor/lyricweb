@@ -150,7 +150,7 @@ fn Controller(
                 </div>
                 <SongList state write_state current_playlist write_edit_song />
             </div>
-            <div class="column">
+            <div class="column" id="playlist-column">
                 <Show when=move || edit_song.get().is_some()
                 fallback=move || view! {
                     <Playlist state write_state current_playlist write_current_playlist current_slide write_current_slide/>

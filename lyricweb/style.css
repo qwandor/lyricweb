@@ -20,14 +20,18 @@ body {
   box-sizing: border-box;
 }
 
-#controller .column {
-  flex: 1;
-  overflow: auto;
-}
-
 .column {
   display: flex;
   flex-direction: column;
+}
+
+#controller .column {
+  flex: 2;
+  overflow: auto;
+}
+
+#playlist-column.column {
+  flex: 3;
 }
 
 form.vertical,
