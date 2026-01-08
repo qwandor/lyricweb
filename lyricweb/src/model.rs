@@ -37,6 +37,13 @@ impl Default for State {
 }
 
 impl State {
+    /// Returns a list of playlists and their IDs, sorted by name.
+    pub fn playlists_sorted(&self) -> Vec<(&u32, &Playlist)> {
+        let mut playlists = self.playlists.iter().collect::<Vec<_>>();
+        playlists.sort_by_key(|(id, playlist)| (&playlist.name, **id));
+        playlists
+    }
+
     /// Returns a list of all songs, sorted by title.
     pub fn songs_by_title(&self) -> Vec<(&u32, &Song)> {
         let mut songs = self.songs.iter().collect::<Vec<_>>();

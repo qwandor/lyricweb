@@ -33,7 +33,7 @@ pub fn Playlist(
             prop:value=move || current_playlist.get().map(|playlist_id| playlist_id.to_string())>
             {move || {
                 let state = state.read();
-                state.playlists.iter().map(|(playlist_id, playlist)| {
+                state.playlists_sorted().iter().map(|(playlist_id, playlist)| {
                     view! {
                         <option value={playlist_id.to_string()}>{playlist.name.clone()}</option>
                     }
