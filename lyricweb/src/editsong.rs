@@ -81,13 +81,13 @@ pub fn PreviewSlides(state: Signal<State>, song_id: ReadSignal<Option<u32>>) -> 
         Some(
             slides
                 .into_iter()
-                .filter_map(|slide| {
-                    let slide_content = SlideContent::for_slide(&state, &slide)?;
-                    Some(view! {
+                .map(|slide| {
+                    let slide_content = SlideContent::for_slide(&state, &slide);
+                    view! {
                         <div class="preview">
                             <Slide slide=slide_content />
                         </div>
-                    })
+                    }
                 })
                 .collect::<Vec<_>>(),
         )

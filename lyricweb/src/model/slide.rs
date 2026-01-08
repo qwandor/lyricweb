@@ -4,7 +4,7 @@
 
 use crate::model::{
     Slide, SlideIndex, State, Theme,
-    helpers::{authors_as_string, title_for_song},
+    helpers::{authors_as_string, first_songbook, title_for_song},
 };
 use openlyrics::{
     simplify_contents,
@@ -25,13 +25,16 @@ pub struct SlideContent {
 impl SlideContent {
     pub fn for_index(state: &State, index: SlideIndex) -> Option<Self> {
         let slide = &state.slide(index)?;
-        Self::for_slide(state, slide)
+        Some(Self::for_slide(state, slide))
     }
 
-    pub fn for_slide(state: &State, slide: &Slide) -> Option<Self> {
+    pub fn for_slide(state: &State, slide: &Slide) -> Self {
         let theme = state.theme.clone();
         match slide {
-            Slide::SongStart { .. } => None,
+            Slide::SongStart { song_id, .. } => {
+                let song = &state.songs[&song_id];
+                Self::song_title(song, theme)
+            }
             &Slide::Lyrics {
                 song_id,
                 lyric_entry_index,
@@ -39,15 +42,9 @@ impl SlideContent {
                 last_page,
             } => {
                 let song = &state.songs[&song_id];
-                Some(Self::song_page(
-                    song,
-                    lyric_entry_index,
-                    lines_index,
-                    last_page,
-                    theme,
-                ))
+                Self::song_page(song, lyric_entry_index, lines_index, last_page, theme)
             }
-            Slide::Text(text) => Some(Self::for_text(text, theme)),
+            Slide::Text(text) => Self::for_text(text, theme),
         }
     }
 
@@ -63,6 +60,21 @@ impl SlideContent {
         }
     }
 
+    fn song_title(song: &Song, theme: Theme) -> Self {
+        let title = Some(if let Some(songbook_entry) = first_songbook(song) {
+            format!("Hymn {songbook_entry}")
+        } else {
+            format!("Hymn")
+        });
+        let body = Some(format!("<h2>{}</h2>", title_for_song(song)));
+        Self {
+            title,
+            body,
+            credit: None,
+            theme,
+        }
+    }
+
     fn song_page(
         song: &Song,
         lyric_entry_index: usize,
@@ -71,12 +83,6 @@ impl SlideContent {
         theme: Theme,
     ) -> Self {
         let item = &song.lyrics.lyrics[lyric_entry_index];
-
-        let title = if lyric_entry_index == 0 && lines_index == 0 {
-            Some(title_for_song(song).to_owned())
-        } else {
-            None
-        };
 
         let credit = if last_page {
             Some(authors_as_string(song))
@@ -114,7 +120,7 @@ impl SlideContent {
         };
 
         Self {
-            title,
+            title: None,
             body: Some(body),
             credit,
             theme,

@@ -16,12 +16,17 @@ pub fn title_for_song(song: &Song) -> &str {
 /// Returns the title to use for the given song, including the first songbook entry if there is one.
 pub fn title_with_songbook(song: &Song) -> String {
     let title = title_for_song(song);
-    if let Some(songbook) = song.properties.songbooks.songbooks.get(0) {
-        let songbook_entry = songbook_to_string(songbook);
+    if let Some(songbook_entry) = first_songbook(song) {
         format!("{songbook_entry}: {title}")
     } else {
         title.to_string()
     }
+}
+
+/// Returns the first songbook entry for the song formatted as a string, if there is one.
+pub fn first_songbook(song: &Song) -> Option<String> {
+    let songbook = song.properties.songbooks.songbooks.get(0)?;
+    Some(songbook_to_string(songbook))
 }
 
 /// Returns whether the given song should be displayed when the given search filter is entered.
