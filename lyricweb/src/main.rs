@@ -164,7 +164,12 @@ fn Controller(
     let presentation_window = StoredValue::new_local(None);
 
     let (presentation_displays_available, presentation_connection, presentation_request) =
-        presentation_init(current_slide_content, write_error);
+        presentation_init(
+            current_slide_content,
+            write_error,
+            write_current_slide,
+            state,
+        );
 
     view! {
         <div id="controller">
@@ -313,6 +318,8 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
 fn presentation_init(
     current_slide_content: Signal<SlideContent>,
     write_error: WriteSignal<Option<String>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+    state: Signal<State>,
 ) -> (
     ReadSignal<bool>,
     RwSignal<Option<PresentationConnection>, LocalStorage>,
@@ -328,6 +335,8 @@ fn presentation_init(
                 &presentation_request,
                 current_slide_content,
                 presentation_connection,
+                write_current_slide,
+                state,
             ),
             write_error,
         );
@@ -352,6 +361,8 @@ fn setup_presentation_request(
     request: &PresentationRequest,
     current_slide_content: Signal<SlideContent>,
     presentation_connection: RwSignal<Option<PresentationConnection>, LocalStorage>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+    state: Signal<State>,
 ) -> Result<(), String> {
     Effect::new(move || {
         let data = serde_json::to_string(&*current_slide_content.read()).unwrap();
@@ -399,9 +410,23 @@ fn setup_presentation_request(
             );
 
             let connection_clone = connection.clone();
-            _ = use_event_listener(connection.clone(), message, move |_event| {
-                let data = serde_json::to_string(&*current_slide_content.read_untracked()).unwrap();
-                connection_clone.send_with_str(&data).unwrap();
+            _ = use_event_listener(connection.clone(), message, move |event| {
+                if let Some(message_data) = event.data().as_string() {
+                    match message_data.as_str() {
+                        "prev" => {
+                            previous_slide(write_current_slide, state);
+                        }
+                        "next" => {
+                            next_slide(write_current_slide, state);
+                        }
+                        _ => {
+                            let data =
+                                serde_json::to_string(&*current_slide_content.read_untracked())
+                                    .unwrap();
+                            connection_clone.send_with_str(&data).unwrap();
+                        }
+                    }
+                }
             });
 
             if connection.state() == PresentationConnectionState::Connected {

@@ -12,7 +12,7 @@ use leptos_use::use_event_listener;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    Event, PresentationConnection, PresentationConnectionAvailableEvent,
+    Event, KeyboardEvent, PresentationConnection, PresentationConnectionAvailableEvent,
     PresentationConnectionCloseEvent, PresentationConnectionList, PresentationConnectionState,
 };
 
@@ -69,20 +69,24 @@ pub fn PresentationReceiver() -> impl IntoView {
     let (current_slide_content, write_current_slide_content) = signal(SlideContent::default());
     let (error, write_error) = signal(None);
 
+    let connection = StoredValue::new_local(None);
     spawn_show_error(
-        setup_receiver(write_current_slide_content, write_error),
+        setup_receiver(write_current_slide_content, write_error, connection),
         write_error,
     );
 
     view! {
-        <p id="error">{ error }</p>
-        <Slide slide=current_slide_content />
+        <div id="presentation" tabindex="0" on:keydown=move |event| presentation_receiver_keydown(event, connection)>
+            <p id="error">{ error }</p>
+            <Slide slide=current_slide_content />
+        </div>
     }
 }
 
 async fn setup_receiver(
     write_current_slide_content: WriteSignal<SlideContent>,
     write_error: WriteSignal<Option<String>>,
+    stored_connection: StoredValue<Option<PresentationConnection>, LocalStorage>,
 ) -> Result<(), String> {
     let presentation = window()
         .navigator()
@@ -104,7 +108,11 @@ async fn setup_receiver(
         Custom::new("connectionavailable"),
         move |event: PresentationConnectionAvailableEvent| {
             gloo_console::log!(&event);
-            setup_connection(event.connection(), write_current_slide_content, write_error);
+            setup_connection(
+                &event.connection(),
+                write_current_slide_content,
+                write_error,
+            );
         },
     );
 
@@ -117,13 +125,15 @@ async fn setup_receiver(
         .unchecked_into::<PresentationConnection>();
     gloo_console::log!(&connection);
 
-    setup_connection(connection, write_current_slide_content, write_error);
+    setup_connection(&connection, write_current_slide_content, write_error);
+
+    stored_connection.set_value(Some(connection));
 
     Ok(())
 }
 
 fn setup_connection(
-    connection: PresentationConnection,
+    connection: &PresentationConnection,
     write_current_slide_content: WriteSignal<SlideContent>,
     write_error: WriteSignal<Option<String>>,
 ) {
@@ -164,5 +174,26 @@ fn setup_connection(
     );
     if connection.state() == PresentationConnectionState::Connected {
         connection.send_with_str("").unwrap();
+    }
+}
+
+fn presentation_receiver_keydown(
+    event: KeyboardEvent,
+    connection: StoredValue<Option<PresentationConnection>, LocalStorage>,
+) {
+    if let Some(connection) = connection.read_value().as_ref()
+        && connection.state() == PresentationConnectionState::Connected
+    {
+        match event.key().as_str() {
+            "ArrowLeft" => {
+                event.prevent_default();
+                connection.send_with_str("prev").unwrap();
+            }
+            "ArrowRight" => {
+                event.prevent_default();
+                connection.send_with_str("next").unwrap();
+            }
+            _ => {}
+        }
     }
 }
