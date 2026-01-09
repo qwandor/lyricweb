@@ -12,7 +12,8 @@ use gloo_net::http::Request;
 use gloo_utils::format::JsValueSerdeExt;
 use leptos::prelude::*;
 use leptos_router::NavigateOptions;
-use lyricutils::tunebook_to_open_lyrics;
+use lyricutils::{music_xml_to_open_lyrics, tunebook_to_open_lyrics};
+use musicxml::read_score_data_partwise;
 use wasm_bindgen::JsValue;
 use web_sys::{
     FileSystemWritableFileStream, OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent,
@@ -158,6 +159,13 @@ fn import_str(format: Format, text: &str, write_state: WriteSignal<State>) -> Re
                 state.add_song(song);
             });
         }
+        Format::MusicXml => {
+            let score = read_score_data_partwise(text.into())?;
+            let song = music_xml_to_open_lyrics(&score);
+            write_state.update(|state| {
+                state.add_song(song);
+            });
+        }
         Format::Abc => {
             let tunebook = tune_book(text.trim()).map_err(|e| e.to_string())?;
             let song = tunebook_to_open_lyrics(&tunebook);
@@ -172,6 +180,7 @@ fn import_str(format: Format, text: &str, write_state: WriteSignal<State>) -> Re
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Format {
     Json,
+    MusicXml,
     Xml,
     Abc,
 }
@@ -180,6 +189,8 @@ impl Format {
     fn from_filename(filename: &str) -> Self {
         if filename.ends_with(".json") {
             Self::Json
+        } else if filename.ends_with(".mxl") || filename.ends_with(".musicxml") {
+            Self::MusicXml
         } else if filename.ends_with(".xml") {
             Self::Xml
         } else {

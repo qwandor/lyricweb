@@ -1403,6 +1403,7 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "lyricutils",
+ "musicxml",
  "openlyrics",
  "pulldown-cmark",
  "quick-xml",
