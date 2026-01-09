@@ -159,7 +159,7 @@ fn import_str(format: Format, text: &str, write_state: WriteSignal<State>) -> Re
             });
         }
         Format::Abc => {
-            let tunebook = tune_book(text).map_err(|e| e.to_string())?;
+            let tunebook = tune_book(text.trim()).map_err(|e| e.to_string())?;
             let song = tunebook_to_open_lyrics(&tunebook);
             write_state.update(|state| {
                 state.add_song(song);

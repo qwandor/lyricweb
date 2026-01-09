@@ -37,7 +37,7 @@ fn main() -> Result<(), Report> {
 fn read_and_convert(path: &Path, format: Format) -> Result<Song, Report> {
     Ok(match format {
         Format::Abc => {
-            let tunebook = tune_book(&read_to_string(path)?)?;
+            let tunebook = tune_book(read_to_string(path)?.trim())?;
             tunebook_to_open_lyrics(&tunebook)
         }
         Format::MusicXml => {
