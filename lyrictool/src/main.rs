@@ -34,7 +34,13 @@ fn main() -> Result<(), Report> {
 }
 
 /// Reads from the given file in the given format, and converts it to OpenLyrics format.
-fn read_and_convert(path: &Path, format: Format) -> Result<Song, Report> {
+///
+/// If the format is not given then it will be guessed from the filename if possible.
+fn read_and_convert(path: &Path, format: Option<Format>) -> Result<Song, Report> {
+    let format = format
+        .or_else(|| Format::guess_from_filename(path.to_str()?))
+        .ok_or_eyre("Unrecognised file extension, please specify format")?;
+
     Ok(match format {
         Format::Abc => {
             let tunebook = tune_book(read_to_string(path)?.trim())?;
@@ -56,7 +62,7 @@ enum Args {
     Print {
         /// Format of the input file.
         #[arg(long)]
-        input_format: Format,
+        input_format: Option<Format>,
         path: PathBuf,
     },
 }
@@ -66,6 +72,20 @@ enum Format {
     Abc,
     MusicXml,
     OpenLyrics,
+}
+
+impl Format {
+    fn guess_from_filename(filename: &str) -> Option<Self> {
+        if filename.ends_with(".abc") || filename.ends_with(".abc.txt") {
+            Some(Self::Abc)
+        } else if filename.ends_with(".mxl") || filename.ends_with(".musicxml") {
+            Some(Self::MusicXml)
+        } else if filename.ends_with(".xml") {
+            Some(Self::OpenLyrics)
+        } else {
+            None
+        }
+    }
 }
 
 fn print_header(properties: &Properties) {
