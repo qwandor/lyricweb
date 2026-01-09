@@ -2,7 +2,8 @@
 
 [![crates.io page](https://img.shields.io/crates/v/lyrictool.svg)](https://crates.io/crates/lyrictool)
 
-A small utility for working with [OpenLyrics](https://docs.openlyrics.org/en/latest/) XML files.
+A small utility for working with song lyrics in [OpenLyrics](https://docs.openlyrics.org/en/latest/)
+XML files and other formats.
 
 This is not an officially supported Google product. This project is not eligible for the
 [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
