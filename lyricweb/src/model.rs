@@ -16,6 +16,9 @@ use std::{
 };
 use thiserror::Error;
 
+/// A Markdown horizontal rule, which we interpret as a page break.
+const TEXT_PAGEBREAK: &str = "\n---\n";
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct State {
     #[serde(default)]
@@ -203,13 +206,9 @@ impl State {
                     None
                 }
             }
-            PlaylistEntry::Text(text) => {
-                if index.page_index == 0 {
-                    Some(Slide::Text(text))
-                } else {
-                    None
-                }
-            }
+            PlaylistEntry::Text(text) => Some(Slide::Text(
+                text.split(TEXT_PAGEBREAK).nth(index.page_index)?,
+            )),
         }
     }
 
@@ -271,14 +270,20 @@ impl State {
                         },
                     ));
                 }
-                PlaylistEntry::Text(text) => slides.push((
-                    SlideIndex {
-                        playlist_id,
-                        entry_index,
-                        page_index: 0,
-                    },
-                    Slide::Text(text),
-                )),
+                PlaylistEntry::Text(text) => {
+                    slides.extend(text.split(TEXT_PAGEBREAK).enumerate().map(
+                        |(page_index, page_text)| {
+                            (
+                                SlideIndex {
+                                    playlist_id,
+                                    entry_index,
+                                    page_index,
+                                },
+                                Slide::Text(page_text),
+                            )
+                        },
+                    ))
+                }
             }
         }
         slides
@@ -936,6 +941,68 @@ mod tests {
                 lines_index: 0,
                 last_page: false,
             })
+        );
+    }
+
+    #[test]
+    fn multi_page_text() {
+        let state = State {
+            playlists: [(
+                0,
+                Playlist {
+                    name: "Playlist".to_string(),
+                    entries: vec![PlaylistEntry::Text("Foo\n\n---\n\nBar\n".to_string())],
+                },
+            )]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            state.slides(0),
+            vec![
+                (
+                    SlideIndex {
+                        playlist_id: 0,
+                        entry_index: 0,
+                        page_index: 0,
+                    },
+                    Slide::Text("Foo\n")
+                ),
+                (
+                    SlideIndex {
+                        playlist_id: 0,
+                        entry_index: 0,
+                        page_index: 1,
+                    },
+                    Slide::Text("\nBar\n")
+                ),
+            ]
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                playlist_id: 0,
+                entry_index: 0,
+                page_index: 0,
+            }),
+            Some(Slide::Text("Foo\n"))
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                playlist_id: 0,
+                entry_index: 0,
+                page_index: 1,
+            }),
+            Some(Slide::Text("\nBar\n"))
+        );
+        assert_eq!(
+            state.slide(SlideIndex {
+                playlist_id: 0,
+                entry_index: 0,
+                page_index: 2,
+            }),
+            None
         );
     }
 }
