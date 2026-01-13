@@ -66,6 +66,7 @@ pub fn Playlist(
                     match slide {
                         Slide::SongStart { song_id } => {
                             view! {
+                                {(slide_index.entry_index != 0).then(|| view! { <hr/> } )}
                                 <option value={slide_index.to_string()}>{ title_with_songbook(&state.songs[&song_id]).to_owned() }</option>
                             }.into_any()
                         }
@@ -93,6 +94,7 @@ pub fn Playlist(
                         }
                         Slide::Text(text) => {
                             view! {
+                                {(slide_index.entry_index != 0 && slide_index.page_index == 0).then(|| view! { <hr/> } )}
                                 <option value={slide_index.to_string()}>{ text }</option>
                             }.into_any()
                         }
