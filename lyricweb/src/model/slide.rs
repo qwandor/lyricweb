@@ -10,8 +10,12 @@ use openlyrics::{
     simplify_contents,
     types::{LyricEntry, Song},
 };
-use pulldown_cmark::{Parser, html::push_html};
+use pulldown_cmark::{Options, Parser, html::push_html};
 use serde::{Deserialize, Serialize};
+
+const MARKDOWN_OPTIONS: Options = Options::ENABLE_SUBSCRIPT
+    .union(Options::ENABLE_SUPERSCRIPT)
+    .union(Options::ENABLE_SMART_PUNCTUATION);
 
 /// The contents of a slide ready to render.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -49,7 +53,7 @@ impl SlideContent {
     }
 
     fn for_text(text: &str, theme: Theme) -> Self {
-        let parser = Parser::new(text);
+        let parser = Parser::new_ext(text, MARKDOWN_OPTIONS);
         let mut body = String::new();
         push_html(&mut body, parser);
         Self {
