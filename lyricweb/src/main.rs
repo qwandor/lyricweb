@@ -7,6 +7,7 @@ mod files;
 mod import_export;
 mod model;
 mod playlist;
+mod screens;
 mod slide;
 mod songlist;
 
@@ -15,6 +16,7 @@ use crate::{
     import_export::{export, import, import_url},
     model::{PlaylistEntry, SlideIndex, State, slide::SlideContent},
     playlist::Playlist,
+    screens::use_screens,
     slide::{PresentationReceiver, Slide},
     songlist::SongList,
 };
@@ -35,7 +37,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     Event, HtmlTextAreaElement, KeyboardEvent, PresentationAvailability, PresentationConnection,
     PresentationConnectionAvailableEvent, PresentationConnectionState, PresentationRequest,
-    SubmitEvent, Window,
+    ScreenDetailed, SubmitEvent, Window,
 };
 
 fn main() {
@@ -158,6 +160,7 @@ fn Controller(
 
     let (output, write_output) = signal(None);
     let (error, write_error) = signal(None);
+    let screens = use_screens();
 
     let (edit_song, write_edit_song) = signal(None);
 
@@ -225,6 +228,11 @@ fn Controller(
                             } else {
                                 view! {}.into_any()
                             }
+                        }}
+                        {move || {
+                            screens.get().into_iter().filter(|screen| screen.is_primary()).map(|screen| view! {
+                                <input type="button" value={format!("Present on {}", screen.label())} on:click=move |_| open_presentation_secondary_screen(&mut presentation_window.write_value(),screen.clone()) />
+                            }).collect::<Vec<_>>()
                         }}
                     </form>
                     <div class="preview">
@@ -308,7 +316,34 @@ fn open_presentation(presentation_window: &mut Option<Window>) {
     }
 
     let new_presentation_window = window()
-        .open_with_url_and_target_and_features(&"?present=true", &"", &"popup=true")
+        .open_with_url_and_target_and_features("?present=true", "", "popup=true")
+        .unwrap()
+        .unwrap();
+
+    *presentation_window = Some(new_presentation_window);
+}
+
+fn open_presentation_secondary_screen(
+    presentation_window: &mut Option<Window>,
+    screen: ScreenDetailed,
+) {
+    gloo_console::log!(&screen);
+
+    // If there's already a presentation window open, close it.
+    if let Some(presentation_window) = presentation_window {
+        presentation_window.close().unwrap();
+    }
+
+    let new_presentation_window = window()
+        .open_with_url_and_target_and_features(
+            &format!(
+                "?present=true&fullscreen={},{}",
+                screen.left(),
+                screen.top(),
+            ),
+            "",
+            "popup=true",
+        )
         .unwrap()
         .unwrap();
 
