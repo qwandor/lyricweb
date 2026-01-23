@@ -436,7 +436,7 @@ impl PlaylistEntry {
     pub fn page_count(&self, state: &State) -> usize {
         match self {
             PlaylistEntry::Song { song_id } => state.slides_for_song(*song_id).len(),
-            PlaylistEntry::Text(_) => 1,
+            PlaylistEntry::Text(text) => text.matches(TEXT_PAGEBREAK).count() + 1,
         }
     }
 }
@@ -1004,5 +1004,16 @@ mod tests {
             }),
             None
         );
+    }
+
+    #[test]
+    fn text_page_count() {
+        let state = State::default();
+
+        let single_page = PlaylistEntry::Text("Foo\nBar".to_string());
+        assert_eq!(single_page.page_count(&state), 1);
+
+        let multiple_pages = PlaylistEntry::Text("Foo\n\n---\n\nBar\n---\nBaz".to_string());
+        assert_eq!(multiple_pages.page_count(&state), 3);
     }
 }
