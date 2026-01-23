@@ -118,3 +118,8 @@ h2 {
   margin-top: 0.1em;
   margin-bottom: 0.1em;
 }
+
+sub,
+sup {
+  font-size: 60%;
+}
