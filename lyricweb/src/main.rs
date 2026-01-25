@@ -9,6 +9,7 @@ mod model;
 mod playlist;
 mod slide;
 mod songlist;
+mod wakelock;
 
 use crate::{
     editsong::{EditSong, PreviewSlides},
@@ -17,6 +18,7 @@ use crate::{
     playlist::Playlist,
     slide::{PresentationReceiver, Slide},
     songlist::SongList,
+    wakelock::WakeLockGuard,
 };
 use leptos::{
     ev::{Custom, change, message},
@@ -62,12 +64,14 @@ fn App() -> impl IntoView {
         <Router>
             <Routes fallback=|| "Not found">
                 <Route path=path!("*any") view={move || if query_signal("present").0.get().unwrap_or_default() {
+                    let _wakelock = WakeLockGuard::new();
                     view! {
                         <div id="presentation" tabindex="0" on:keydown=move |event| presentation_keydown(event, state, write_current_slide)>
                             <Slide slide=current_slide_content/>
                         </div>
                     }.into_any()
                 } else if query_signal("present_remote").0.get().unwrap_or_default() {
+                    let _wakelock = WakeLockGuard::new();
                     view! {
                         <PresentationReceiver />
                     }.into_any()

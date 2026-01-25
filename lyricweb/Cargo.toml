@@ -57,6 +57,9 @@ web-sys = { version = "0.3.85", features = [
     "SaveFilePickerOptions",
     "StyleSheet",
     "StyleSheetList",
+    "WakeLock",
+    "WakeLockSentinel",
+    "WakeLockType",
     "Window",
 ] }
 
