@@ -16,7 +16,7 @@ gloo-file = { version = "0.3.0", features = ["futures"] }
 gloo-net = { version = "0.6.0", features = ["http"] }
 gloo-utils = "0.2.0"
 leptos = { version = "0.8.15", features = ["csr"] }
-leptos_router = "0.8.10"
+leptos_router = "0.8.11"
 leptos_meta = "0.8.5"
 leptos-use = "0.18.0"
 lyricutils = { version = "0.1.0", path = "../lyricutils" }
