@@ -11,7 +11,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 abc-parser = "0.4.0"
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.56", features = ["derive"] }
 eyre = "0.6.12"
 log = "0.4.29"
 lyricutils = { version = "0.1.0", path = "../lyricutils" }
