@@ -15,4 +15,4 @@ log = "0.4.29"
 musicxml = "1.1.2"
 openlyrics = { version = "0.1.1", path = "../openlyrics" }
 quick-xml = { version = "0.39.0", features = ["serialize"] }
-regex = "1.12.2"
+regex = "1.12.3"
