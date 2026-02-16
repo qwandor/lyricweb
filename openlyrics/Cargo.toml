@@ -11,4 +11,4 @@ categories = ["parser-implementations"]
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
-quick-xml = { version = "0.39.0", features = ["serialize"] }
+quick-xml = { version = "0.39.1", features = ["serialize"] }
