@@ -17,7 +17,7 @@ gloo-net = { version = "0.6.0", features = ["http"] }
 gloo-utils = "0.2.0"
 leptos = { version = "0.8.16", features = ["csr"] }
 leptos_router = "0.8.11"
-leptos_meta = "0.8.5"
+leptos_meta = "0.8.6"
 leptos-use = "0.18.0"
 lyricutils = { version = "0.1.0", path = "../lyricutils" }
 musicxml = "1.1.2"
