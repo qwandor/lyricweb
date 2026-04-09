@@ -28,22 +28,22 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
                 "font-family: " {theme.font_family} ";"
             "}"
             ".slide h1 {"
-                "font-size:" {theme.heading_size as f32 / 10.0}"cqi;"
+                "font-size:" {theme.heading_size as f32}"pt;"
                 "color: " {theme.heading_colour} ";"
             "}"
             ".slide h2 {"
-                "font-size:" {theme.body_size as f32 / 10.0}"cqi;"
+                "font-size:" {theme.body_size as f32}"pt;"
                 "color: " {theme.body_colour.clone()} ";"
             "}"
             ".slide p {"
-                "font-size:" {theme.body_size as f32 / 10.0}"cqi;"
+                "font-size:" {theme.body_size as f32}"pt;"
                 "color: " {theme.body_colour} ";"
             "}"
             ".slide p.credit {"
-                "font-size:" {theme.body_size as f32 / 20.0} "cqi;"
+                "font-size:" {theme.body_size as f32 / 2.0} "pt;"
             "}"
             </Style>
-            <div class="slide">
+            <div class="slide-container"><div class="slide">
             { content.title.as_ref().map(|title| {
                 view! {
                     <h1>{title.clone()}</h1>
@@ -59,7 +59,7 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
                     <p class="credit">{credit.clone()}</p>
                 }
             })}
-            </div>
+            </div></div>
         }
     }
 }
