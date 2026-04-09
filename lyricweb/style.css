@@ -68,6 +68,7 @@ td input[type="text"] {
 }
 textarea {
   flex: 1;
+  resize: vertical;
 }
 select[size] {
   flex: 1;
