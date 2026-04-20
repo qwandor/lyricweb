@@ -29,7 +29,7 @@ jobs:
         run: trunk build --release --public-url="."
         working-directory: lyricweb
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: lyricweb/dist/
       - name: Deploy to GitHub Pages
