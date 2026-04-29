@@ -86,7 +86,7 @@ select[size] {
   border: 1px solid red;
 }
 
-.slide {
+.slide-container {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -96,12 +96,16 @@ select[size] {
   container-type: size;
 }
 
+.slide {
+  zoom: calc(100cqi / 1920px);
+}
+
 .slide p,
 .slide h1,
 .slide h2 {
-  margin-left: 3cqi;
-  margin-right: 1cqi;
-  margin-top: 2cqi;
+  margin-left: 45pt;
+  margin-right: 15pt;
+  margin-top: 30pt;
 }
 
 .slide h1,
