@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 abc-parser = "0.4.0"
 clap = { version = "4.6.1", features = ["derive"] }
 eyre = "0.6.12"
-log = "0.4.30"
+log = "0.4.32"
 lyricutils = { version = "0.1.0", path = "../lyricutils" }
 musicxml = "1.1.2"
 openlyrics = { version = "0.1.1", path = "../openlyrics" }

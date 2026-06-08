@@ -11,7 +11,7 @@ categories = ["encoding"]
 
 [dependencies]
 abc-parser = "0.4.0"
-log = "0.4.30"
+log = "0.4.32"
 musicxml = "1.1.2"
 openlyrics = { version = "0.1.1", path = "../openlyrics" }
 quick-xml = { version = "0.40.1", features = ["serialize"] }
