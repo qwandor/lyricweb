@@ -98,6 +98,7 @@ select[size] {
 
 .slide {
   zoom: calc(100cqi / 1920px);
+  height: stretch;
 }
 
 .slide p,
@@ -116,6 +117,18 @@ select[size] {
 .slide p.credit {
   text-align: right;
   font-style: italic;
+}
+
+.slide-body:has(img.fullslide) {
+  background-color: black;
+  height: 100%;
+}
+
+.slide img.fullslide {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 h1,

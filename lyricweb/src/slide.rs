@@ -51,7 +51,7 @@ pub fn Slide(#[prop(into)] slide: Signal<SlideContent>) -> impl IntoView {
             })}
             { content.body.as_ref().map(|body| {
                 view! {
-                    <div inner_html=body.clone() />
+                    <div class="slide-body" inner_html=body.clone() />
                 }
             })}
             { content.credit.as_ref().map(|credit| {
