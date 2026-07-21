@@ -201,6 +201,8 @@ fn Controller(
                         <textarea rows="12" node_ref=text_entry prop:value=move || current_slide_text().unwrap_or_default() />
                         <div class="button-row">
                             <input type="submit" value="Add" disabled=no_current_playlist />
+                            <input type="button" value="Add image" disabled=no_current_playlist
+                                on:click=move |_| add_image_to_playlist(text_entry.get().unwrap(), current_playlist, write_current_slide, write_state) />
                             <input type="button" value="Update"
                                 disabled=move || current_slide_text().is_none()
                                 on:click=move |_| update_text_in_playlist(text_entry.get().unwrap(), current_slide, write_state) />
@@ -517,7 +519,28 @@ fn add_text_to_playlist(
             page_index: 0,
         }));
     });
-    text_entry.set_value("");
+}
+
+fn add_image_to_playlist(
+    text_entry: HtmlTextAreaElement,
+    current_playlist: Signal<Option<u32>>,
+    write_current_slide: WriteSignal<Option<SlideIndex>>,
+    write_state: WriteSignal<State>,
+) {
+    let Some(current_playlist) = current_playlist.get() else {
+        return;
+    };
+
+    let url = text_entry.value();
+    write_state.update(|state| {
+        let entries = &mut state.playlists.get_mut(&current_playlist).unwrap().entries;
+        entries.push(PlaylistEntry::Image { url });
+        write_current_slide.set(Some(SlideIndex {
+            playlist_id: current_playlist,
+            entry_index: entries.len() - 1,
+            page_index: 0,
+        }));
+    });
 }
 
 fn update_text_in_playlist(
@@ -532,13 +555,19 @@ fn update_text_in_playlist(
     let new_text = text_entry.value();
 
     write_state.update(|state| {
-        if let PlaylistEntry::Text(text) = &mut state
+        match &mut state
             .playlists
             .get_mut(&current_slide.playlist_id)
             .unwrap()
             .entries[current_slide.entry_index]
         {
-            *text = new_text;
+            PlaylistEntry::Text(text) => {
+                *text = new_text;
+            }
+            PlaylistEntry::Image { url } => {
+                *url = new_text;
+            }
+            _ => {}
         }
     });
 }

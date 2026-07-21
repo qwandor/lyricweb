@@ -104,15 +104,15 @@ impl State {
     }
 
     pub fn slide_text(&self, index: SlideIndex) -> Option<String> {
-        if let PlaylistEntry::Text(text) = self
+        match self
             .playlists
             .get(&index.playlist_id)?
             .entries
             .get(index.entry_index)?
         {
-            Some(text.to_owned())
-        } else {
-            None
+            PlaylistEntry::Text(text) => Some(text.to_owned()),
+            PlaylistEntry::Image { url } => Some(url.to_owned()),
+            _ => None,
         }
     }
 
