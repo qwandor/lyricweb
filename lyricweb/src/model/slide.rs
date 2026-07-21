@@ -49,6 +49,7 @@ impl SlideContent {
                 Self::song_page(song, lyric_entry_index, lines_index, last_page, theme)
             }
             Slide::Text(text) => Self::for_text(text, theme),
+            Slide::Image { url } => Self::image(url, theme),
         }
     }
 
@@ -56,6 +57,16 @@ impl SlideContent {
         let parser = Parser::new_ext(text, MARKDOWN_OPTIONS);
         let mut body = String::new();
         push_html(&mut body, parser);
+        Self {
+            title: None,
+            body: Some(body),
+            credit: None,
+            theme,
+        }
+    }
+
+    fn image(url: &str, theme: Theme) -> Self {
+        let body = format!("<img src=\"{url}\" class=\"fullslide\"/>");
         Self {
             title: None,
             body: Some(body),

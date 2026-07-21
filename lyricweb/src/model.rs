@@ -209,6 +209,13 @@ impl State {
             PlaylistEntry::Text(text) => Some(Slide::Text(
                 text.split(TEXT_PAGEBREAK).nth(index.page_index)?,
             )),
+            PlaylistEntry::Image { url } => {
+                if index.page_index == 0 {
+                    Some(Slide::Image { url })
+                } else {
+                    None
+                }
+            }
         }
     }
 
@@ -283,6 +290,16 @@ impl State {
                             )
                         },
                     ))
+                }
+                PlaylistEntry::Image { url } => {
+                    slides.push((
+                        SlideIndex {
+                            playlist_id,
+                            entry_index,
+                            page_index: 0,
+                        },
+                        Slide::Image { url },
+                    ));
                 }
             }
         }
@@ -423,12 +440,16 @@ pub enum Slide<'a> {
         last_page: bool,
     },
     Text(&'a str),
+    Image {
+        url: &'a str,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum PlaylistEntry {
     Song { song_id: u32 },
     Text(String),
+    Image { url: String },
 }
 
 impl PlaylistEntry {
@@ -437,6 +458,7 @@ impl PlaylistEntry {
         match self {
             PlaylistEntry::Song { song_id } => state.slides_for_song(*song_id).len(),
             PlaylistEntry::Text(text) => text.matches(TEXT_PAGEBREAK).count() + 1,
+            PlaylistEntry::Image { .. } => 1,
         }
     }
 }

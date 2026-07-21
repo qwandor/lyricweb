@@ -98,6 +98,11 @@ pub fn Playlist(
                                 <option value={slide_index.to_string()}>{ text }</option>
                             }.into_any()
                         }
+                        Slide::Image { url } => {
+                            view! {
+                                <option value={slide_index.to_string()}>{ url }</option>
+                            }.into_any()
+                        }
                     }
                 }).collect::<Vec<_>>()
             }}
