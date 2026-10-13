@@ -3,18 +3,16 @@
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
 use crate::{
-    files::{FileType, pick_open_file, pick_save_file, write_and_close},
+    files::{make_accept_type, pick_open_file, pick_save_file, write_and_close},
     model::State,
 };
 use abc_parser::abc::tune_book;
 use gloo_file::{File, futures::read_as_text};
 use gloo_net::http::Request;
-use gloo_utils::format::JsValueSerdeExt;
 use leptos::prelude::*;
 use leptos_router::NavigateOptions;
 use lyricutils::{music_xml_to_open_lyrics, tunebook_to_open_lyrics};
 use musicxml::read_score_data_partwise;
-use wasm_bindgen::JsValue;
 use web_sys::{
     FileSystemWritableFileStream, OpenFilePickerOptions, SaveFilePickerOptions, SubmitEvent,
 };
@@ -26,15 +24,10 @@ pub async fn export(event: SubmitEvent, state: Signal<State>) -> Result<(), Stri
     let options = SaveFilePickerOptions::new();
     options.set_id("export");
     options.set_suggested_name(Some("lyricweb.json"));
-    options.set_types(
-        &JsValue::from_serde(&[FileType {
-            description: Some("JSON file".to_string()),
-            accept: [("application/json".to_string(), vec![".json".to_string()])]
-                .into_iter()
-                .collect(),
-        }])
-        .unwrap(),
-    );
+    options.set_types(&[make_accept_type(
+        "JSON file",
+        &[("application/json", &[".json"])],
+    )]);
 
     let Ok(file) = pick_save_file(&options).await else {
         return Ok(());
@@ -89,39 +82,19 @@ pub async fn import(
 
     let options = OpenFilePickerOptions::new();
     options.set_id("import");
-    options.set_types(
-        &JsValue::from_serde(&[
-            FileType {
-                description: Some("ABC, JSON or XML file".to_string()),
-                accept: [
-                    ("text/vnd.abc".to_string(), vec![".abc".to_string()]),
-                    ("application/json".to_string(), vec![".json".to_string()]),
-                    ("text/xml".to_string(), vec![".xml".to_string()]),
-                ]
-                .into_iter()
-                .collect(),
-            },
-            FileType {
-                description: Some("ABC file".to_string()),
-                accept: [("text/vnd.abc".to_string(), vec![".abc".to_string()])]
-                    .into_iter()
-                    .collect(),
-            },
-            FileType {
-                description: Some("JSON file".to_string()),
-                accept: [("application/json".to_string(), vec![".json".to_string()])]
-                    .into_iter()
-                    .collect(),
-            },
-            FileType {
-                description: Some("XML file".to_string()),
-                accept: [("text/xml".to_string(), vec![".xml".to_string()])]
-                    .into_iter()
-                    .collect(),
-            },
-        ])
-        .unwrap(),
-    );
+    options.set_types(&[
+        make_accept_type(
+            "ABC, JSON or XML file",
+            &[
+                ("text/vnd.abc", &[".abc"]),
+                ("application/json", &[".json"]),
+                ("text/xml", &[".xml"]),
+            ],
+        ),
+        make_accept_type("ABC file", &[("text/vnd.abc", &[".abc"])]),
+        make_accept_type("JSON file", &[("application/json", &[".json"])]),
+        make_accept_type("XML file", &[("text/xml", &[".xml"])]),
+    ]);
 
     let Ok(file) = pick_open_file(&options).await else {
         return Ok(());

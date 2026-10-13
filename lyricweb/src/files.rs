@@ -6,20 +6,31 @@
 
 use gloo_file::File;
 use leptos::tachys::dom::window;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    FileSystemFileHandle, FileSystemWritableFileStream, OpenFilePickerOptions,
-    SaveFilePickerOptions, js_sys::Array,
+    FilePickerAcceptType, FileSystemFileHandle, FileSystemWritableFileStream,
+    OpenFilePickerOptions, SaveFilePickerOptions,
+    js_sys::{Array, Object, Reflect},
 };
 
-/// Type for the `types` entries of [`OpenFilePickerOptions`] and [`SaveFilePickerOptions`].
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
-pub struct FileType {
-    pub description: Option<String>,
-    pub accept: BTreeMap<String, Vec<String>>,
+pub fn make_accept_type(description: &str, accept: &[(&str, &[&str])]) -> FilePickerAcceptType {
+    let accept_type = FilePickerAcceptType::new();
+    accept_type.set_description(description);
+    let accept_object = Object::new_typed();
+    for (mimetype, extensions) in accept {
+        Reflect::set(
+            &accept_object,
+            &JsValue::from_str(mimetype),
+            &extensions
+                .into_iter()
+                .map(|extension| JsValue::from_str(extension))
+                .collect::<Array>(),
+        )
+        .unwrap();
+    }
+    accept_type.set_accept(&accept_object);
+    accept_type
 }
 
 /// Prompts the user to pick a file to open.
