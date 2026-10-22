@@ -3,10 +3,10 @@
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
 use crate::model::{
-    PlaylistEntry, State,
+    PlaylistEntry, SortOrder, State,
     helpers::{
         authors_as_string, first_line, song_matches_filter, songbook_entries_as_string,
-        title_for_song, title_with_songbook,
+        title_for_song, title_for_sort_order,
     },
 };
 use leptos::prelude::*;
@@ -24,18 +24,25 @@ pub fn SongList(
     let no_current_playlist = move || current_playlist.get().is_none();
     let (selected_song, write_selected_song) = signal(None);
     let (filter, write_filter) = signal(String::new());
+    let sort_order = RwSignal::new(SortOrder::Songbook);
 
     view! {
         <form class="tall" on:submit=move |event| add_song_to_playlist(event, selected_song, current_playlist, write_state)>
+            <fieldset>
+                <legend>"Sort by:"</legend>
+                <label><input type="radio" name="sort" value="songbook" prop:checked=move || sort_order.get() == SortOrder::Songbook on:change=move |_| sort_order.set(SortOrder::Songbook)/>"Songbook"</label>
+                <label><input type="radio" name="sort" value="title" prop:checked=move || sort_order.get() == SortOrder::Title on:change=move |_| sort_order.set(SortOrder::Title)/>"Title"</label>
+                <label><input type="radio" name="sort" value="firstline" prop:checked=move || sort_order.get() == SortOrder::FirstLine on:change=move |_| sort_order.set(SortOrder::FirstLine)/>"First line"</label>
+            </fieldset>
             <input type="text" placeholder="Search" on:input:target=move |event| write_filter.set(event.target().value()) />
             <select size="5" id="song-list" on:change:target=move |event| {
                 write_selected_song.set(event.target().value().parse().ok());
             }>
                 {move || {
                     let state = state.read();
-                    state.songs_by_title().into_iter().filter(|(_, song)| song_matches_filter(song, &filter.read())).map(|(id, song)| {
+                    state.songs_sorted(sort_order.get()).into_iter().filter(|(_, song)| song_matches_filter(song, &filter.read())).map(|(id, song)| {
                         view! {
-                            <option value={id.to_string()}>{title_with_songbook(&song).to_owned()}</option>
+                            <option value={id.to_string()}>{title_for_sort_order(&song, sort_order.get()).to_owned()}</option>
                         }
                     }).collect::<Vec<_>>()
                 }}

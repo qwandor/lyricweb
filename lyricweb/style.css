@@ -74,6 +74,16 @@ select[size] {
   flex: 1;
 }
 
+fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+fieldset legend {
+  float: left;
+  padding: 0;
+}
+
 #song-list,
 #playlist {
   width: 100%;

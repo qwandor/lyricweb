@@ -5,7 +5,7 @@
 pub mod helpers;
 pub mod slide;
 
-use self::helpers::title_for_song;
+use self::helpers::{first_line, first_songbook, title_for_song};
 use openlyrics::types::{LyricEntry, Song};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -48,9 +48,19 @@ impl State {
     }
 
     /// Returns a list of all songs, sorted by title.
-    pub fn songs_by_title(&self) -> Vec<(&u32, &Song)> {
+    pub fn songs_sorted(&self, order: SortOrder) -> Vec<(&u32, &Song)> {
         let mut songs = self.songs.iter().collect::<Vec<_>>();
-        songs.sort_by_key(|(_, song)| title_for_song(song));
+        match order {
+            SortOrder::Songbook => {
+                songs.sort_by_key(|(_, song)| (first_songbook(song), title_for_song(song)));
+            }
+            SortOrder::Title => {
+                songs.sort_by_key(|(_, song)| title_for_song(song));
+            }
+            SortOrder::FirstLine => {
+                songs.sort_by_key(|(_, song)| first_line(song, 0, 0));
+            }
+        }
         songs
     }
 
@@ -338,6 +348,17 @@ impl State {
 
         self.theme = other.theme.clone();
     }
+}
+
+/// The order in which to sort a list of songs.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SortOrder {
+    /// By songbook (if any) then title.
+    Songbook,
+    /// By title.
+    Title,
+    /// By first line.
+    FirstLine,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

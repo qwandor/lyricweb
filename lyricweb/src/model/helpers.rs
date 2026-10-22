@@ -2,6 +2,7 @@
 // This project is dual-licensed under Apache 2.0 and MIT terms.
 // See LICENSE-APACHE and LICENSE-MIT for details.
 
+use crate::model::SortOrder;
 use openlyrics::{
     simplify_contents,
     types::{Author, Lines, LyricEntry, Song, Songbook, VerseContent},
@@ -20,6 +21,26 @@ pub fn title_with_songbook(song: &Song) -> String {
         format!("{songbook_entry}: {title}")
     } else {
         title.to_string()
+    }
+}
+
+/// Returns the title to use when the song is listed according to the given sort order.
+pub fn title_for_sort_order(song: &Song, sort_order: SortOrder) -> String {
+    match sort_order {
+        SortOrder::Songbook => title_with_songbook(song),
+        SortOrder::Title => {
+            let title = title_for_song(song);
+            if let Some(songbook_entry) = first_songbook(song) {
+                format!("{title} ({songbook_entry})")
+            } else {
+                title.to_owned()
+            }
+        }
+        SortOrder::FirstLine => {
+            let line = first_line(song, 0, 0).unwrap_or_default();
+            let title = title_with_songbook(song);
+            format!("{line} ({title})")
+        }
     }
 }
 
