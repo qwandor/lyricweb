@@ -18,7 +18,7 @@ gloo-utils = "0.3.0"
 leptos = { version = "0.8.22", features = ["csr"] }
 leptos_router = "0.8.17"
 leptos_meta = "0.8.7"
-leptos-use = "0.19.2"
+leptos-use = "0.20.0"
 lyricutils = { version = "0.1.0", path = "../lyricutils" }
 musicxml = "1.1.2"
 openlyrics = { version = "0.1.1", path = "../openlyrics" }
