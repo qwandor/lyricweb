@@ -774,7 +774,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8b39f7a21b04d982b709667625a20c7669890270ad77a40b74c0ad02bd61822"
 dependencies = [
- "gloo-utils 0.3.0",
+ "gloo-utils 0.3.1",
  "js-sys",
  "serde",
  "wasm-bindgen",
@@ -834,7 +834,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-sink",
- "gloo-utils 0.3.0",
+ "gloo-utils 0.3.1",
  "http",
  "js-sys",
  "pin-project",
@@ -873,9 +873,9 @@ dependencies = [
 
 [[package]]
 name = "gloo-utils"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4202275d95a142fa209a1e35e91c250a710c5600731372cd3464a39ed01573d6"
+checksum = "b49e445aecd7ad851e4a3704f370f53ae7b267ace62d17be3ec4fac5024eec0e"
 dependencies = [
  "js-sys",
  "serde",
@@ -2622,7 +2622,7 @@ dependencies = [
  "gloo-console",
  "gloo-file",
  "gloo-net 0.7.0",
- "gloo-utils 0.3.0",
+ "gloo-utils 0.3.1",
  "leptos",
  "leptos-use",
  "leptos_meta",
