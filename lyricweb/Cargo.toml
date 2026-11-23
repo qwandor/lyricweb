@@ -13,7 +13,7 @@ abc-parser = "0.4.0"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 gloo-console = "0.4.1"
 gloo-file = { version = "0.4.0", features = ["futures"] }
-gloo-net = { version = "0.7.0", features = ["http"] }
+gloo-net = { version = "0.8.0", features = ["http"] }
 gloo-utils = "0.3.0"
 leptos = { version = "0.8.22", features = ["csr"] }
 leptos_router = "0.8.17"
